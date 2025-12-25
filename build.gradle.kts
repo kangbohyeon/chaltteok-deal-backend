@@ -25,8 +25,20 @@ subprojects {
 	apply(plugin = "org.springframework.boot")
 	apply(plugin = "io.spring.dependency-management")
 
+	configurations {
+		all {
+			exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+		}
+	}
+
 	dependencies {
 		implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+		//log4j2
+		implementation("org.springframework.boot:spring-boot-starter-log4j2")
+		implementation("com.lmax:disruptor:3.4.4")
+		implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
+
 		testImplementation("org.springframework.boot:spring-boot-starter-test")
 		testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 		testRuntimeOnly("org.junit.platform:junit-platform-launcher")
