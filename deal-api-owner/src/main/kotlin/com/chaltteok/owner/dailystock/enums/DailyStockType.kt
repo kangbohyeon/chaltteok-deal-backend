@@ -1,4 +1,6 @@
 package com.chaltteok.owner.dailystock.enums
 
-class DailyStockType {
+enum class DailyStockType {
+    NORMAL,
+    EVENT
 }

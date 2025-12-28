@@ -1,4 +1,5 @@
-package com.chaltteok.owner.enums
+package com.chaltteok.owner.dailystock.enums
 
 enum class DailyStockStatusType {
+    OPEN,CLOSE
 }
