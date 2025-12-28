@@ -1,8 +1,8 @@
-package com.chaltteok.owner.controller
+package com.chaltteok.owner.product.controller
 
 import com.chaltteok.common.dto.ResponseDTO
-import com.chaltteok.owner.dto.ProductRegisterRequest
-import com.chaltteok.owner.service.ProductService
+import com.chaltteok.owner.product.dto.ProductRegisterRequest
+import com.chaltteok.owner.product.service.ProductService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType

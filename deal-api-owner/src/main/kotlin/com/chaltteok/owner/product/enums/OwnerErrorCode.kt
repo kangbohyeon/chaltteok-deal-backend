@@ -1,4 +1,4 @@
-package com.chaltteok.owner.enums
+package com.chaltteok.owner.product.enums
 
 import com.chaltteok.common.enums.ErrorCode
 import org.springframework.http.HttpStatus

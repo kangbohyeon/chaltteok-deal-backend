@@ -1,7 +1,7 @@
-package com.chaltteok.owner.util
+package com.chaltteok.owner.product.util
 
 import com.chaltteok.common.exception.BusinessException
-import com.chaltteok.owner.enums.OwnerErrorCode
+import com.chaltteok.owner.product.enums.OwnerErrorCode
 import org.apache.tika.Tika
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
