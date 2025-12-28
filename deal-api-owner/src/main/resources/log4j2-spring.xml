@@ -44,7 +44,7 @@
             <AppenderRef ref="Console"/>
         </Logger>
 
-        <AsyncLogger name="com.flashdeal" level="DEBUG" additivity="false" includeLocation="false">
+        <AsyncLogger name="com.chaltteok" level="DEBUG" additivity="false" includeLocation="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="FileAppender"/>
             <AppenderRef ref="ErrorFileAppender"/>
