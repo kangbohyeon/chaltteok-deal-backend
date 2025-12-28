@@ -1,9 +1,9 @@
-package com.chaltteok.owner.enums
+package com.chaltteok.owner.product.enums
 
 import com.chaltteok.common.enums.ErrorCode
 import org.springframework.http.HttpStatus
 
-enum class OwnerErrorCode(
+enum class ProductErrorCode(
     override val message: String,
     override val status: HttpStatus
 ): ErrorCode {
