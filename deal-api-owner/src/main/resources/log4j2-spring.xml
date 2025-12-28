@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="DEBUG">
+
+    <Properties>
+        <Property name="LOG_PATH">${spring:logging.file.path:-./logs}</Property>
+        <Property name="SERVICE_NAME">${spring:spring.application.name:-owner-app}</Property>
+        <Property name="LOG_PATTERN">
+            [%d{yyyy-MM-dd HH:mm:ss.SSS}][%highlight{%-5level}] [%style{%t}{bright,blue}] [%style{%c{1.}}{cyan}] : %msg%n
+        </Property>
+        <Property name="FILE_LOG_PATTERN">
+            [%d{yyyy-MM-dd HH:mm:ss.SSS}][%-5level] [%t] [%c{1.}] : %msg%n
+        </Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}" disableAnsi="false"/>
+        </Console>
+
+        <RollingRandomAccessFile name="FileAppender" fileName="${LOG_PATH}/app.log"
+                                 filePattern="${LOG_PATH}/app-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/> <SizeBasedTriggeringPolicy size="100 MB"/> </Policies>
+            <DefaultRolloverStrategy max="30"/> </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="ErrorFileAppender" fileName="${LOG_PATH}/error.log"
+                                 filePattern="${LOG_PATH}/error-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+            <LevelRangeFilter minLevel="ERROR" maxLevel="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+
+        <Logger name="org.hibernate.SQL" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <AsyncLogger name="com.chaltteok" level="DEBUG" additivity="false" includeLocation="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+            <AppenderRef ref="ErrorFileAppender"/>
+        </AsyncLogger>
+
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Root>
+    </Loggers>
+</Configuration>
