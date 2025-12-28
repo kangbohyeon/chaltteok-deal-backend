@@ -1,10 +1,10 @@
-package com.chaltteok.owner.service
+package com.chaltteok.owner.product.service
 
 
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
-import com.chaltteok.owner.dto.ProductRegisterRequest
-import com.chaltteok.owner.util.LocalFileUploader
+import com.chaltteok.owner.product.dto.ProductRegisterRequest
+import com.chaltteok.owner.product.util.LocalFileUploader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

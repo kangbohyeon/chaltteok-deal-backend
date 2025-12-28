@@ -1,7 +1,7 @@
-package com.chaltteok.owner.util
+package com.chaltteok.owner.product.util
 
 import com.chaltteok.common.exception.BusinessException
-import com.chaltteok.owner.enums.OwnerErrorCode
+import com.chaltteok.owner.product.enums.ProductErrorCode
 import org.apache.tika.Tika
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -21,7 +21,7 @@ class LocalFileUploader(
 
         // 파일 존재 여부 확인
         if (file.isEmpty) {
-            throw BusinessException(OwnerErrorCode.FILE_EMPTY)
+            throw BusinessException(ProductErrorCode.FILE_EMPTY)
         }
 
         // mime type check
@@ -30,7 +30,7 @@ class LocalFileUploader(
                 tika.detect(inputStream)
             }
         } catch (e: Exception) {
-            throw BusinessException(OwnerErrorCode.FILE_UPLOAD_ERROR)
+            throw BusinessException(ProductErrorCode.FILE_UPLOAD_ERROR)
         }
 
 
@@ -38,7 +38,7 @@ class LocalFileUploader(
         val allowedMimeTypes = listOf("image/jpeg", "image/png")
 
         if (mimeType !in allowedMimeTypes) {
-            throw BusinessException(OwnerErrorCode.INVALID_FILE_TYPE)
+            throw BusinessException(ProductErrorCode.INVALID_FILE_TYPE)
         }
 
         val directory = Paths.get(uploadDir).toAbsolutePath().normalize()

@@ -1,7 +1,8 @@
-package com.chaltteok.owner.dto
+package com.chaltteok.owner.product.dto
 
 import com.chaltteok.core.domain.Product
 import com.chaltteok.core.domain.ProductOption
+import com.chaltteok.owner.product.enums.StockType
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 
@@ -26,7 +27,7 @@ data class ProductRegisterRequest(
 
     fun toProductOption(product: Product): ProductOption {
         return ProductOption(
-            optionName = "기본옵션",
+            optionName = StockType.NORMAL.name,
             product = product,
             price = price,
         )
