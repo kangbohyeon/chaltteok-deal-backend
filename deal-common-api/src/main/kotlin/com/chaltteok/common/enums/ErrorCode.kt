@@ -1,4 +1,4 @@
-package com.chaltteok.common.exception
+package com.chaltteok.common.enums
 
 import org.springframework.http.HttpStatus
 

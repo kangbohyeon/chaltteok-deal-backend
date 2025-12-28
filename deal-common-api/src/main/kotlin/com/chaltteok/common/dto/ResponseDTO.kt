@@ -1,7 +1,7 @@
 package com.chaltteok.common.dto
 
 import com.chaltteok.common.enums.ResultType
-import com.chaltteok.common.exception.ErrorCode
+import com.chaltteok.common.enums.ErrorCode
 import com.fasterxml.jackson.annotation.JsonInclude
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
