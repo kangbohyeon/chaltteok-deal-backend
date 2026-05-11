@@ -20,6 +20,9 @@ class Product(
     @Column(name = "image_url", length = 255)
     var imageUrl: String? = null,
 
+    @Column(name = "price", nullable = false)
+    var price: Int = 0,
+
     @Column(name = "is_active")
     var isActive: Boolean = true
 

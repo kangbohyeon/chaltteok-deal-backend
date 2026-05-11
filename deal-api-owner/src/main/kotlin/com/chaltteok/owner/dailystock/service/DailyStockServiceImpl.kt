@@ -30,7 +30,7 @@ class DailyStockServiceImpl(
             throw BusinessException(DailyStockErrorCode.EVENT_PRICE_REQUIRED)
         }
 
-        val stock = dailyStocksRegisterRequest.toDailyStockEntity(productOption, finalPrice)
+        val stock = dailyStocksRegisterRequest.toDailyStockEntity(productOption.product, finalPrice)
 
         try {
             dailyStockRepository.save(stock)
