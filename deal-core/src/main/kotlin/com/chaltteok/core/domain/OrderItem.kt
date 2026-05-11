@@ -1,7 +1,6 @@
 package com.chaltteok.core.domain
 
 import jakarta.persistence.*
-import java.math.BigDecimal
 import java.util.*
 
 @Entity
@@ -15,14 +14,14 @@ class OrderItem(
     val order: Order? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stock_id", nullable = false, referencedColumnName = "stock_id")
-    val stock: DailyStock,
+    @JoinColumn(name = "product_id", nullable = false)
+    val product: Product,
 
     @Column(name = "quantity", nullable = false)
     val quantity: Int,
 
-    @Column(name = "price_per_item", nullable = false)
-    val pricePerItem: BigDecimal
+    @Column(name = "price", nullable = false)
+    val price: Int
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

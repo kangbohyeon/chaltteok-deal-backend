@@ -13,12 +13,13 @@ import java.util.*
     ],
     uniqueConstraints = [
         UniqueConstraint(name = "uk_stock_uuid", columnNames = ["stock_uuid"]),
-        UniqueConstraint(name = "uk_option_date_type", columnNames = ["option_id", "sale_date", "stock_type"])
+        UniqueConstraint(name = "uk_product_date_type", columnNames = ["product_id", "sale_date", "stock_type"])
     ]
 )
 class DailyStock(
-    @Column(name = "option_id", nullable = false)
-    val optionId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    val product: Product,
 
     @Column(name = "sale_date", nullable = false)
     val saleDate: LocalDate,
@@ -32,18 +33,18 @@ class DailyStock(
     @Column(name = "total_qty", nullable = false)
     val totalQty: Int,
 
-    @Column(name = "current_qty", nullable = false)
-    var currentQty: Int,
+    @Column(name = "remain_stock", nullable = false)
+    var remainStock: Int,
 
     @Version
     val version: Long = 0L,
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    var status: String = "OPEN",
+    var status: DailyStockStatus = DailyStockStatus.OPEN,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
-
 
 ) {
     @Id

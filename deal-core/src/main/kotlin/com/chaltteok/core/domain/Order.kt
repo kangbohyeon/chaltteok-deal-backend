@@ -15,23 +15,25 @@ import java.util.*
     ]
 )
 class Order(
-    @Column(name = "user_id", nullable = false)
-    val userId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    val user: User,
 
     @Column(name = "total_price", nullable = false)
     val totalPrice: Int,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
-    var status: String = "PENDING",
+    var status: OrderStatus = OrderStatus.PENDING,
 
     @Column(name = "receiver_name", nullable = false, length = 50)
-    val receiverName: String,
+    val receiverName: String = "",
 
     @Column(name = "receiver_phone", nullable = false, length = 20)
-    val receiverPhone: String,
+    val receiverPhone: String = "",
 
     @Column(name = "address", nullable = false, length = 255)
-    val address: String,
+    val address: String = "",
 
     @Column(name = "ordered_at", nullable = false, updatable = false)
     val orderedAt: LocalDateTime = LocalDateTime.now(),

@@ -9,14 +9,17 @@ import java.time.LocalDateTime
     uniqueConstraints = [UniqueConstraint(name = "uk_one_event_per_user", columnNames = ["user_id", "stock_id"])]
 )
 class EventHistory(
-    @Column(name = "user_id", nullable = false)
-    val userId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    val user: User,
 
-    @Column(name = "stock_id", nullable = false)
-    val stockId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stock_id", nullable = false)
+    val dailyStock: DailyStock,
 
-    @Column(name = "order_id", nullable = false)
-    val orderId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    var order: Order? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
