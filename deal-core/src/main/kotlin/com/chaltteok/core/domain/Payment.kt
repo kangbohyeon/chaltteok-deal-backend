@@ -1,7 +1,6 @@
 package com.chaltteok.core.domain
 
 import jakarta.persistence.*
-import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
 
@@ -16,8 +15,9 @@ import java.util.*
     ]
 )
 class Payment(
-    @Column(name = "order_id", nullable = false)
-    val orderId: Long,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    val order: Order,
 
     @Column(name = "pg_provider", length = 20)
     var pgProvider: String? = null,
@@ -26,17 +26,17 @@ class Payment(
     var pgTid: String? = null,
 
     @Column(name = "amount", nullable = false)
-    val amount: BigDecimal,
+    val amount: Int,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
-    var status: String = "READY",
+    var status: PaymentStatus = PaymentStatus.READY,
 
     @Column(name = "paid_at", columnDefinition = "DATETIME")
     val paidAt: LocalDateTime? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
-
 
 ) {
     @Id
