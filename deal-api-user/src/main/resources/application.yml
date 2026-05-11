@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: deal-api-user
+  config:
+    import: classpath:application-core.yml
+
+server:
+  port: 8080
