@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: deal-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: user-api
+          uri: http://localhost:8080
+          predicates:
+            - Path=/api/v1/user/**
+        - id: owner-api
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/owner/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders:
+              - "*"
+            exposedHeaders:
+              - "Content-Type"
+            allowCredentials: false
+            maxAge: 3600
+
+server:
+  port: 8000
