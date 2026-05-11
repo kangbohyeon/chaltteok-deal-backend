@@ -4,8 +4,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class DealGatewayApplication
+class DealConsumerApplication
 
 fun main(args: Array<String>) {
-    runApplication<DealGatewayApplication>(*args)
+    runApplication<DealConsumerApplication>(*args)
 }
