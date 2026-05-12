@@ -1,6 +1,6 @@
 package com.chaltteok.user.dailystock.service
 
-import com.chaltteok.core.domain.DailyStockStatus
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.user.dailystock.dto.OpenDailyStockResponse

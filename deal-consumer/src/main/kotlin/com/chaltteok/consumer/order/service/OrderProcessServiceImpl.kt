@@ -4,7 +4,7 @@ import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
-import com.chaltteok.core.domain.OrderStatus
+import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.order.OrderRepository

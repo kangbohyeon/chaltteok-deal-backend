@@ -1,5 +1,6 @@
 package com.chaltteok.core.domain
 
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime

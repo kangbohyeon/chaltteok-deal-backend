@@ -1,7 +1,7 @@
 package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
-import com.chaltteok.core.domain.DailyStockStatus
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.user.UserRepository
