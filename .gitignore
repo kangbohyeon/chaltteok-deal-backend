@@ -40,6 +40,8 @@ out/
 .kotlin
 
 
-**/src/main/resources/*.yml
+**/src/main/resources/application-core.yml
+**/src/main/resources/application-local.yml
+**/src/main/resources/application-secret.yml
 logs
 uploads
