@@ -1,7 +1,7 @@
 package com.chaltteok.core.repository.dailystock
 
 import com.chaltteok.core.domain.DailyStock
-import com.chaltteok.core.domain.DailyStockStatus
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 

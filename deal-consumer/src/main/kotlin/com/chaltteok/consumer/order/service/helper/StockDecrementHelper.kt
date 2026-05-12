@@ -1,6 +1,6 @@
 package com.chaltteok.consumer.order.service.helper
 
-import com.chaltteok.core.domain.DailyStockStatus
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation

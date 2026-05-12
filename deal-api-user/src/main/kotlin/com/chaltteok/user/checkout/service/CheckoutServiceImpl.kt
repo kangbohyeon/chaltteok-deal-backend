@@ -3,9 +3,9 @@ package com.chaltteok.user.checkout.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
-import com.chaltteok.core.domain.OrderStatus
+import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.Payment
-import com.chaltteok.core.domain.PaymentStatus
+import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
