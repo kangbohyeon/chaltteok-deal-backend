@@ -24,9 +24,15 @@ class Product(
     var price: Int = 0,
 
     @Column(name = "is_active")
-    var isActive: Boolean = true
+    var isActive: Boolean = true,
 
-    ) : BaseEntity() {
+    @Column(name = "is_sold_out")
+    var isSoldOut: Boolean = false,
+
+    @Column(name = "is_recommended")
+    var isRecommended: Boolean = false,
+
+) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "product_id")

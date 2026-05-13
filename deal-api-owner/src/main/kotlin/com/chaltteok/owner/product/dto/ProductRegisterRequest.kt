@@ -6,7 +6,7 @@ import com.chaltteok.owner.product.enums.StockType
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 
-data class ProductRegisterRequest(
+class ProductRegisterRequest(
     @field:NotNull(message = "name must be not null or empty")
     val name: String,
 
