@@ -9,6 +9,7 @@ data class ProductResponse(
     val price: Long,
     val description: String?,
     val thumbnailUrl: String?,
+    val soldOut: Boolean,
 ) {
     companion object {
         fun from(product: Product) = ProductResponse(
@@ -18,6 +19,7 @@ data class ProductResponse(
             price = product.price.toLong(),
             description = product.description?.ifBlank { null },
             thumbnailUrl = product.imageUrl,
+            soldOut = product.isSoldOut,
         )
     }
 }

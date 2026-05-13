@@ -5,5 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface ProductRepository : JpaRepository<Product, Long>, ProductRepositoryCustom {
     fun findAllByIsActiveTrue(): List<Product>
+    fun findAllByIsActiveTrueAndIsRecommendedTrue(): List<Product>
     fun findByProductUuid(productUuid: String): Product?
 }
