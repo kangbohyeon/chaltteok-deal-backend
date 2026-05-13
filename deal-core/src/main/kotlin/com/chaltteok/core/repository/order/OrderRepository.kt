@@ -4,4 +4,5 @@ import com.chaltteok.core.domain.Order
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface OrderRepository : JpaRepository<Order, Long>, OrderRepositoryCustom {
+    fun findByUser_IdOrderByOrderedAtDesc(userId: Long): List<Order>
 }
