@@ -2,7 +2,9 @@ package com.chaltteok.core.domain
 
 import com.chaltteok.core.domain.enums.OrderStatus
 import jakarta.persistence.*
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Entity
@@ -10,9 +12,11 @@ import java.util.*
     name = "tb_orders",
     indexes = [
         Index(name = "idx_user_orders", columnList = "user_id,ordered_at"),
+        Index(name = "idx_order_number", columnList = "order_number"),
     ],
     uniqueConstraints = [
-        UniqueConstraint(name = "uk_order_uuid", columnNames = ["order_uuid"])
+        UniqueConstraint(name = "uk_order_uuid", columnNames = ["order_uuid"]),
+        UniqueConstraint(name = "uk_order_number", columnNames = ["order_number"]),
     ]
 )
 class Order(
@@ -49,4 +53,19 @@ class Order(
 
     @Column(name = "order_uuid", nullable = false, unique = true, length = 36)
     val orderUuid: String = UUID.randomUUID().toString()
+
+    // 사용자 노출용 주문번호 (UUID보다 짧고 가독성 있는 식별자)
+    @Column(name = "order_number", nullable = false, unique = true, length = 20)
+    val orderNumber: String = run {
+        val date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+        val suffix = UUID.randomUUID().toString().replace("-", "").uppercase().take(6)
+        "ORD$date$suffix"
+    }
+
+    fun isCancellable(): Boolean = status == OrderStatus.PENDING || status == OrderStatus.COMPLETED
+
+    fun cancel() {
+        status = OrderStatus.CANCELLED
+        updatedAt = LocalDateTime.now()
+    }
 }

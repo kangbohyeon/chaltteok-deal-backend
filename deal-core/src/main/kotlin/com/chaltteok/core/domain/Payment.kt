@@ -26,6 +26,9 @@ class Payment(
     @Column(name = "pg_tid", length = 100)
     var pgTid: String? = null,
 
+    @Column(name = "payment_method", length = 30)
+    var paymentMethod: String? = null,
+
     @Column(name = "amount", nullable = false)
     val amount: Int,
 
@@ -47,4 +50,8 @@ class Payment(
 
     @Column(name = "payment_uuid", nullable = false, unique = true, length = 36)
     val paymentUuid: String = UUID.randomUUID().toString()
+
+    fun cancel() {
+        status = PaymentStatus.CANCELLED
+    }
 }

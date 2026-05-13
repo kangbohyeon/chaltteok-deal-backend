@@ -19,4 +19,13 @@ class OrderController(
         orderService.placeOrder(userId, request)
         return ResponseDTO.success("주문 요청이 접수되었습니다.")
     }
+
+    @PostMapping("/{orderNumber}/cancel")
+    fun cancelOrder(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable orderNumber: String,
+    ): ResponseDTO<String> {
+        orderService.cancelOrder(userId, orderNumber)
+        return ResponseDTO.success("주문이 취소되었습니다.")
+    }
 }
