@@ -44,6 +44,9 @@ class ProductServiceImpl(
         product.name = request.name
         product.description = request.descp
         product.price = request.price
+        product.isActive = request.isActive
+        product.isSoldOut = request.isSoldOut
+        product.isRecommended = request.isRecommended
         if (imageUrl != null) product.imageUrl = imageUrl
     }
 

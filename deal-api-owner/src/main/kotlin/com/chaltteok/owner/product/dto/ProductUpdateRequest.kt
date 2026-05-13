@@ -12,4 +12,7 @@ class ProductUpdateRequest(
     val price: Int,
 
     val descp: String?,
+    val isActive: Boolean = true,
+    val isSoldOut: Boolean = false,
+    val isRecommended: Boolean = false,
 )

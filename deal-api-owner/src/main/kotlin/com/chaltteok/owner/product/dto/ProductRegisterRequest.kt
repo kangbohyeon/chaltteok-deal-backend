@@ -14,14 +14,19 @@ class ProductRegisterRequest(
     @field:Min(value = 100, message = "price must be more than 100")
     val price: Int,
 
-    val descp: String?
+    val descp: String?,
+    val isActive: Boolean = true,
+    val isSoldOut: Boolean = false,
+    val isRecommended: Boolean = false,
 ) {
-    fun toProduct(imageUrl : String?): Product {
+    fun toProduct(imageUrl: String?): Product {
         return Product(
             name = name,
             description = descp,
             imageUrl = imageUrl,
-            isActive = true
+            isActive = isActive,
+            isSoldOut = isSoldOut,
+            isRecommended = isRecommended,
         )
     }
 
