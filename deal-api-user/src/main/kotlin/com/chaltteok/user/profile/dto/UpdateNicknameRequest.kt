@@ -1,7 +1,8 @@
 package com.chaltteok.user.profile.dto
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 
 data class UpdateNicknameRequest(
-    @field:NotBlank val nickname: String,
+    @field:NotBlank @field:Size(max = 50) val nickname: String,
 )

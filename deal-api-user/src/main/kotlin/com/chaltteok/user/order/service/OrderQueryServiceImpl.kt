@@ -19,7 +19,7 @@ class OrderQueryServiceImpl(
         if (orders.isEmpty()) return emptyList()
 
         val orderIds = orders.mapNotNull { it.id }
-        val itemsByOrderId = orderItemRepository.findByOrder_IdIn(orderIds)
+        val itemsByOrderId = orderItemRepository.findByOrderIdsWithProduct(orderIds)
             .groupBy { it.order?.id }
 
         return orders.map { order ->
