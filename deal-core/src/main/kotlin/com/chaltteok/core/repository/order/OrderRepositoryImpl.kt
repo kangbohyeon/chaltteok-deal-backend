@@ -52,7 +52,7 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
     }
 
     override fun findDailySalesTrend(from: LocalDateTime, to: LocalDateTime): List<DailySalesAgg> {
-        val dateExpr = Expressions.dateTemplate(LocalDate::class.java, "DATE({0})", qOrder.orderedAt)
+        val dateExpr = Expressions.dateTemplate(java.sql.Date::class.java, "DATE({0})", qOrder.orderedAt)
         val countExpr = qOrder.id.count()
         val revenueExpr = qOrder.totalPrice.longValue().sum()
 
@@ -68,7 +68,7 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
             .fetch()
             .map { tuple ->
                 DailySalesAgg(
-                    date = tuple.get(dateExpr)!!,
+                    date = tuple.get(dateExpr)!!.toLocalDate(),
                     orderCount = tuple.get(countExpr) ?: 0L,
                     revenue = tuple.get(revenueExpr) ?: 0L,
                 )
