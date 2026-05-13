@@ -57,7 +57,13 @@ class LocalFileUploader(
         val filePath = directory.resolve(savedFileName)
         file.transferTo(filePath.toFile())
 
-        // 저장된 경로 반환
-        return "$uploadDir/$savedFileName"
+        // URL 경로 반환 (/images/xxx.jpg 형태로 정적 파일 서빙)
+        return "/images/$savedFileName"
+    }
+
+    fun deleteFile(imageUrl: String) {
+        val fileName = imageUrl.removePrefix("/images/")
+        val filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(fileName)
+        Files.deleteIfExists(filePath)
     }
 }

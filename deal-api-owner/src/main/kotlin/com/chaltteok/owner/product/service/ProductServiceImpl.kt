@@ -39,7 +39,10 @@ class ProductServiceImpl(
     override fun updateProduct(productUuid: String, request: ProductUpdateRequest, image: MultipartFile?) {
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
-        val imageUrl = image?.takeIf { !it.isEmpty }?.let { fileUploader.uploadFile(it) }
+        val newImageUrl = image?.takeIf { !it.isEmpty }?.let { newImage ->
+            product.imageUrl?.let { fileUploader.deleteFile(it) }
+            fileUploader.uploadFile(newImage)
+        }
 
         product.name = request.name
         product.description = request.descp
@@ -47,13 +50,14 @@ class ProductServiceImpl(
         product.isActive = request.isActive
         product.isSoldOut = request.isSoldOut
         product.isRecommended = request.isRecommended
-        if (imageUrl != null) product.imageUrl = imageUrl
+        if (newImageUrl != null) product.imageUrl = newImageUrl
     }
 
     @Transactional
     override fun deleteProduct(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
+        product.imageUrl?.let { fileUploader.deleteFile(it) }
         productOptionRepository.deleteAll(
             productOptionRepository.findAll().filter { it.product.id == product.id }
         )
