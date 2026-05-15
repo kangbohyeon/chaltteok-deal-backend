@@ -52,8 +52,8 @@ class OrderQueryServiceImpl(
         if (orders.isEmpty()) {
             return OrderHistoryPageResponse(
                 content = emptyList(),
-                totalElements = 0L,
-                totalPages = 0,
+                totalElements = page.totalElements,
+                totalPages = page.totalPages,
                 currentPage = pageable.pageNumber,
                 pageSize = pageable.pageSize,
             )
