@@ -3,6 +3,7 @@ package com.chaltteok.user.auth.controller
 import com.chaltteok.common.dto.ResponseDTO
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.dto.LoginRequest
+import com.chaltteok.common.security.dto.LoginResponseDto
 import com.chaltteok.common.security.dto.ReissueRequest
 import com.chaltteok.common.security.dto.TokenDto
 import com.chaltteok.common.security.enums.AuthErrorCode
@@ -23,7 +24,7 @@ class AuthController(
 ) {
 
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseDTO<TokenDto> =
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseDTO<LoginResponseDto> =
         ResponseDTO.success(userAuthService.login(request.email, request.password))
 
     @PostMapping("/register")

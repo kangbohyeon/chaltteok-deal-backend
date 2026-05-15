@@ -9,6 +9,7 @@ import com.chaltteok.user.profile.dto.UserProfileResponse
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class UserProfileServiceImpl(
@@ -44,5 +45,6 @@ class UserProfileServiceImpl(
         }
 
         user.password = passwordEncoder.encode(request.newPassword)
+        user.passwordChangedAt = LocalDateTime.now()
     }
 }
