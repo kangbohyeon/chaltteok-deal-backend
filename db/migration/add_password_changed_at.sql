@@ -1,0 +1,2 @@
+ALTER TABLE tb_users ADD COLUMN IF NOT EXISTS password_changed_at DATETIME NULL;
+ALTER TABLE tb_owner ADD COLUMN IF NOT EXISTS password_changed_at DATETIME NULL;

@@ -1,6 +1,7 @@
 package com.chaltteok.core.domain
 
 import jakarta.persistence.*
+import java.time.LocalDateTime
 import java.util.*
 
 @Entity
@@ -16,7 +17,7 @@ class Owner(
     val username: String,
 
     @Column(name = "password", nullable = false, length = 255)
-    val password: String,
+    var password: String,
 
     @Column(name = "name", nullable = false, length = 50)
     val name: String,
@@ -33,4 +34,7 @@ class Owner(
 
     @Column(name = "owner_uuid", nullable = false, unique = true, length = 36)
     val ownerUuid: String = UUID.randomUUID().toString()
+
+    @Column(name = "password_changed_at")
+    var passwordChangedAt: LocalDateTime? = null
 }

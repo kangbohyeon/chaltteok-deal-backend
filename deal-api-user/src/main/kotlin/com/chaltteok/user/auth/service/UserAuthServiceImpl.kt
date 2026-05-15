@@ -1,7 +1,7 @@
 package com.chaltteok.user.auth.service
 
 import com.chaltteok.common.exception.BusinessException
-import com.chaltteok.common.security.dto.TokenDto
+import com.chaltteok.common.security.dto.LoginResponseDto
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.User
@@ -10,6 +10,7 @@ import com.chaltteok.user.auth.dto.RegisterRequest
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class UserAuthServiceImpl(
@@ -24,7 +25,7 @@ class UserAuthServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun login(email: String, password: String): TokenDto {
+    override fun login(email: String, password: String): LoginResponseDto {
         val user = userRepository.findByEmail(email)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
@@ -34,9 +35,12 @@ class UserAuthServiceImpl(
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
         }
 
+        val requirePasswordChange = user.passwordChangedAt == null ||
+            user.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(90))
+
         val accessToken = jwtTokenProvider.generateAccessToken(user.id!!, ROLE)
         val refreshToken = jwtTokenProvider.generateRefreshToken(user.id!!, ROLE)
-        return TokenDto(accessToken, refreshToken, user.id!!)
+        return LoginResponseDto(accessToken, refreshToken, user.id!!, requirePasswordChange)
     }
 
     @Transactional

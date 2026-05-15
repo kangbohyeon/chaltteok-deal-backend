@@ -1,6 +1,7 @@
 package com.chaltteok.core.domain
 
 import jakarta.persistence.*
+import java.time.LocalDateTime
 import java.util.*
 
 @Entity
@@ -35,4 +36,7 @@ class User(
 
     @Column(name = "password", nullable = true, length = 255)
     var password: String? = null
+
+    @Column(name = "password_changed_at")
+    var passwordChangedAt: LocalDateTime? = null
 }
