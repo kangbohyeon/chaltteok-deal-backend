@@ -32,4 +32,7 @@ class User(
 
     @Column(name = "user_uuid", nullable = false, length = 36)
     val userUuid: String = UUID.randomUUID().toString()
+
+    @Column(name = "password", nullable = true, length = 255)
+    var password: String? = null
 }
