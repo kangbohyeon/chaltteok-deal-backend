@@ -7,6 +7,7 @@ import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 class UserAuthServiceImpl(
     private val userRepository: UserRepository,
     private val jwtTokenProvider: JwtTokenProvider,
+    private val passwordEncoder: PasswordEncoder,
 ) : UserAuthService {
 
     companion object {
@@ -25,6 +27,10 @@ class UserAuthServiceImpl(
     override fun login(email: String, password: String): TokenDto {
         val user = userRepository.findByEmail(email)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
+
+        if (user.password != null && !passwordEncoder.matches(password, user.password)) {
+            throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
+        }
 
         val accessToken = jwtTokenProvider.generateAccessToken(user.id!!, ROLE)
         val refreshToken = jwtTokenProvider.generateRefreshToken(user.id!!, ROLE)
@@ -43,6 +49,7 @@ class UserAuthServiceImpl(
             provider = LOCAL_PROVIDER,
             providerId = request.email,
         )
+        user.password = passwordEncoder.encode(request.password)
         userRepository.save(user)
     }
 }
