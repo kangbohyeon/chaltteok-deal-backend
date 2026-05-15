@@ -43,7 +43,7 @@ class CheckoutServiceImpl(
         }
         orderItemRepository.saveAll(orderItems)
 
-        val payment = Payment(order = savedOrder, amount = request.totalAmount.toInt(), status = PaymentStatus.SUCCESS)
+        val payment = Payment(order = savedOrder, amount = request.totalAmount.toInt(), status = PaymentStatus.SUCCESS, paymentMethod = request.paymentMethod)
         paymentRepository.save(payment)
 
         savedOrder.status = OrderStatus.COMPLETED

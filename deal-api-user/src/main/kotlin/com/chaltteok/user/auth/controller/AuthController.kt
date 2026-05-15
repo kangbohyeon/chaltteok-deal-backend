@@ -23,7 +23,7 @@ class AuthController(
 ) {
 
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): ResponseDTO<TokenDto> =
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseDTO<TokenDto> =
         ResponseDTO.success(userAuthService.login(request.email, request.password))
 
     @PostMapping("/register")
