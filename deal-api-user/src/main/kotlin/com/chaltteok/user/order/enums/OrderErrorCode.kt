@@ -11,4 +11,7 @@ enum class OrderErrorCode(
     DAILY_STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "일일 재고를 찾을 수 없습니다."),
     STOCK_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "주문 가능한 상태가 아닙니다."),
     ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "이미 참여한 이벤트입니다."),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
+    ORDER_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 주문입니다."),
+    ORDER_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 주문 상태입니다."),
 }

@@ -24,6 +24,7 @@ class ProductRegisterRequest(
             name = name,
             description = descp,
             imageUrl = imageUrl,
+            price = price,
             isActive = isActive,
             isSoldOut = isSoldOut,
             isRecommended = isRecommended,

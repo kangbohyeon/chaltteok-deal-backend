@@ -1,5 +1,6 @@
 package com.chaltteok.core.repository.order
 
+import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.QOrder
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.order.dto.DailySalesAgg
@@ -7,6 +8,9 @@ import com.chaltteok.core.repository.order.dto.HourlySalesAgg
 import com.chaltteok.core.repository.order.dto.SalesPeriodAgg
 import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -99,5 +103,59 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
                     revenue = tuple.get(revenueExpr) ?: 0L,
                 )
             }
+    }
+
+    override fun findByUserIdPaged(
+        userId: Long,
+        keyword: String?,
+        status: OrderStatus?,
+        fromDate: LocalDate?,
+        toDate: LocalDate?,
+        paymentStatus: String?,
+        pageable: Pageable,
+    ): Page<Order> {
+        val qPayment = com.chaltteok.core.domain.QPayment.payment
+
+        var predicate = qOrder.user.id.eq(userId)
+        if (!keyword.isNullOrBlank()) {
+            predicate = predicate.and(qOrder.orderNumber.containsIgnoreCase(keyword))
+        }
+        if (status != null) {
+            predicate = predicate.and(qOrder.status.eq(status))
+        }
+        if (fromDate != null) {
+            predicate = predicate.and(qOrder.orderedAt.goe(fromDate.atStartOfDay()))
+        }
+        if (toDate != null) {
+            predicate = predicate.and(qOrder.orderedAt.loe(toDate.atTime(23, 59, 59)))
+        }
+        if (!paymentStatus.isNullOrBlank()) {
+            val matchingOrderIds = jpaQueryFactory
+                .select(qPayment.order.id)
+                .from(qPayment)
+                .join(qPayment.order, qOrder)
+                .where(
+                    qPayment.order.user.id.eq(userId),
+                    qPayment.status.stringValue().eq(paymentStatus),
+                )
+                .fetch()
+            predicate = predicate.and(qOrder.id.`in`(matchingOrderIds))
+        }
+
+        val content = jpaQueryFactory
+            .selectFrom(qOrder)
+            .where(predicate)
+            .orderBy(qOrder.orderedAt.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val total = jpaQueryFactory
+            .select(qOrder.count())
+            .from(qOrder)
+            .where(predicate)
+            .fetchOne() ?: 0L
+
+        return PageImpl(content, pageable, total)
     }
 }

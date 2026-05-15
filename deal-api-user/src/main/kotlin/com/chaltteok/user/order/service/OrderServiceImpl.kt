@@ -2,8 +2,11 @@ package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.enums.DailyStockStatus
+import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
+import com.chaltteok.core.repository.order.OrderRepository
+import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.infrastructure.kafka.OrderEventProducer
 import com.chaltteok.user.order.dto.OrderRequest
@@ -17,6 +20,8 @@ class OrderServiceImpl(
     private val dailyStockRepository: DailyStockRepository,
     private val eventHistoryRepository: EventHistoryRepository,
     private val orderEventProducer: OrderEventProducer,
+    private val orderRepository: OrderRepository,
+    private val paymentRepository: PaymentRepository,
 ) : OrderService {
 
     @Transactional(readOnly = true)
@@ -36,5 +41,23 @@ class OrderServiceImpl(
         }
 
         orderEventProducer.sendOrderEvent(userId, dailyStock.id!!)
+    }
+
+    @Transactional
+    override fun cancelOrder(userId: Long, orderNumber: String) {
+        val order = orderRepository.findByOrderNumberAndUser_Id(orderNumber, userId)
+            .orElseThrow { BusinessException(OrderErrorCode.ORDER_NOT_FOUND) }
+
+        if (order.status == OrderStatus.CANCELLED) {
+            throw BusinessException(OrderErrorCode.ORDER_ALREADY_CANCELLED)
+        }
+        if (!order.isCancellable()) {
+            throw BusinessException(OrderErrorCode.ORDER_NOT_CANCELLABLE)
+        }
+
+        order.cancel()
+
+        val orderIds = listOfNotNull(order.id)
+        paymentRepository.findByOrderIds(orderIds).forEach { it.cancel() }
     }
 }

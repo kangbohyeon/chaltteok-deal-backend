@@ -1,8 +1,10 @@
 package com.chaltteok.user.order.controller
 
 import com.chaltteok.common.dto.ResponseDTO
+import com.chaltteok.user.order.dto.OrderHistoryPageResponse
 import com.chaltteok.user.order.dto.OrderHistoryResponse
 import com.chaltteok.user.order.service.OrderQueryService
+import org.springframework.data.domain.PageRequest
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -13,6 +15,24 @@ class OrderQueryController(
     @GetMapping
     fun getOrderHistory(
         @RequestHeader("X-User-Id") userId: Long,
-    ): ResponseDTO<List<OrderHistoryResponse>> =
-        ResponseDTO.success(orderQueryService.getOrderHistory(userId))
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") size: Int,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) fromDate: String?,
+        @RequestParam(required = false) toDate: String?,
+        @RequestParam(required = false) paymentStatus: String?,
+    ): ResponseDTO<OrderHistoryPageResponse> {
+        val pageable = PageRequest.of(page, size.coerceIn(1, 50))
+        return ResponseDTO.success(
+            orderQueryService.getOrderHistory(userId, keyword, status, fromDate, toDate, paymentStatus, pageable)
+        )
+    }
+
+    @GetMapping("/{orderNumber}")
+    fun getOrderDetail(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable orderNumber: String,
+    ): ResponseDTO<OrderHistoryResponse> =
+        ResponseDTO.success(orderQueryService.getOrderDetail(userId, orderNumber))
 }

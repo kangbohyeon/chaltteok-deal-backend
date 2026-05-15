@@ -19,4 +19,8 @@ class ProductQueryServiceImpl(
     override fun getRecommendedProducts(): List<ProductResponse> =
         productRepository.findAllByIsActiveTrueAndIsRecommendedTrue()
             .map { ProductResponse.from(it) }
+
+    @Transactional(readOnly = true)
+    override fun searchProducts(keyword: String): List<ProductResponse> =
+        productRepository.searchByKeyword(keyword).map { ProductResponse.from(it) }
 }
