@@ -46,6 +46,7 @@ class ProductRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Prod
                 qProduct.name.containsIgnoreCase(keyword),
             )
             .orderBy(qProduct.name.asc())
+            .limit(200)
             .fetch()
     }
 }

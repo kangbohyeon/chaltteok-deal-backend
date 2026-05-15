@@ -11,9 +11,12 @@ import com.chaltteok.user.order.dto.OrderHistoryResponse
 import com.chaltteok.user.order.dto.PaymentInfoResponse
 import com.chaltteok.user.order.enums.OrderErrorCode
 import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
+import java.time.format.DateTimeParseException
 
 @Service
 class OrderQueryServiceImpl(
@@ -33,8 +36,16 @@ class OrderQueryServiceImpl(
         pageable: Pageable,
     ): OrderHistoryPageResponse {
         val orderStatus = status?.let { runCatching { OrderStatus.valueOf(it) }.getOrNull() }
-        val from = fromDate?.let { LocalDate.parse(it) }
-        val to = toDate?.let { LocalDate.parse(it) }
+        val from = fromDate?.let {
+            try { LocalDate.parse(it) } catch (e: DateTimeParseException) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid fromDate format. Expected yyyy-MM-dd")
+            }
+        }
+        val to = toDate?.let {
+            try { LocalDate.parse(it) } catch (e: DateTimeParseException) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid toDate format. Expected yyyy-MM-dd")
+            }
+        }
 
         val page = orderRepository.findByUserIdPaged(userId, keyword, orderStatus, from, to, paymentStatus, pageable)
         val orders = page.content

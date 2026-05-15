@@ -133,7 +133,11 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
             val matchingOrderIds = jpaQueryFactory
                 .select(qPayment.order.id)
                 .from(qPayment)
-                .where(qPayment.status.stringValue().eq(paymentStatus))
+                .join(qPayment.order, qOrder)
+                .where(
+                    qPayment.order.user.id.eq(userId),
+                    qPayment.status.stringValue().eq(paymentStatus),
+                )
                 .fetch()
             predicate = predicate.and(qOrder.id.`in`(matchingOrderIds))
         }

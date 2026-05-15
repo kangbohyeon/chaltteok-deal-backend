@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
+import org.springframework.http.HttpStatus
 
 @RestController
 @RequestMapping("/api/v1/user/products")
@@ -22,6 +24,10 @@ class ProductQueryController(
         ResponseDTO.success(productQueryService.getRecommendedProducts())
 
     @GetMapping("/search")
-    fun searchProducts(@RequestParam keyword: String): ResponseDTO<List<ProductResponse>> =
-        ResponseDTO.success(productQueryService.searchProducts(keyword))
+    fun searchProducts(@RequestParam keyword: String): ResponseDTO<List<ProductResponse>> {
+        if (keyword.isBlank() || keyword.length > 100) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "keyword must be between 1 and 100 characters")
+        }
+        return ResponseDTO.success(productQueryService.searchProducts(keyword))
+    }
 }
