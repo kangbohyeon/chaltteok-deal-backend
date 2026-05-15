@@ -1,6 +1,7 @@
 package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -12,6 +13,7 @@ import com.chaltteok.user.order.enums.OrderErrorCode
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 
 @Service
 class OrderQueryServiceImpl(
@@ -21,8 +23,20 @@ class OrderQueryServiceImpl(
 ) : OrderQueryService {
 
     @Transactional(readOnly = true)
-    override fun getOrderHistory(userId: Long, keyword: String?, pageable: Pageable): OrderHistoryPageResponse {
-        val page = orderRepository.findByUserIdPaged(userId, keyword, pageable)
+    override fun getOrderHistory(
+        userId: Long,
+        keyword: String?,
+        status: String?,
+        fromDate: String?,
+        toDate: String?,
+        paymentStatus: String?,
+        pageable: Pageable,
+    ): OrderHistoryPageResponse {
+        val orderStatus = status?.let { runCatching { OrderStatus.valueOf(it) }.getOrNull() }
+        val from = fromDate?.let { LocalDate.parse(it) }
+        val to = toDate?.let { LocalDate.parse(it) }
+
+        val page = orderRepository.findByUserIdPaged(userId, keyword, orderStatus, from, to, paymentStatus, pageable)
         val orders = page.content
         if (orders.isEmpty()) {
             return OrderHistoryPageResponse(

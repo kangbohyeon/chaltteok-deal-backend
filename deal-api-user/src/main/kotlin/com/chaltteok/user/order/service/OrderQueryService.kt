@@ -5,6 +5,14 @@ import com.chaltteok.user.order.dto.OrderHistoryResponse
 import org.springframework.data.domain.Pageable
 
 interface OrderQueryService {
-    fun getOrderHistory(userId: Long, keyword: String?, pageable: Pageable): OrderHistoryPageResponse
+    fun getOrderHistory(
+        userId: Long,
+        keyword: String?,
+        status: String?,
+        fromDate: String?,
+        toDate: String?,
+        paymentStatus: String?,
+        pageable: Pageable,
+    ): OrderHistoryPageResponse
     fun getOrderDetail(userId: Long, orderNumber: String): OrderHistoryResponse
 }

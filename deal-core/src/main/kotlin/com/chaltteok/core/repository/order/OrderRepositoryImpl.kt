@@ -105,10 +105,37 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
             }
     }
 
-    override fun findByUserIdPaged(userId: Long, keyword: String?, pageable: Pageable): Page<Order> {
+    override fun findByUserIdPaged(
+        userId: Long,
+        keyword: String?,
+        status: OrderStatus?,
+        fromDate: LocalDate?,
+        toDate: LocalDate?,
+        paymentStatus: String?,
+        pageable: Pageable,
+    ): Page<Order> {
+        val qPayment = com.chaltteok.core.domain.QPayment.payment
+
         var predicate = qOrder.user.id.eq(userId)
         if (!keyword.isNullOrBlank()) {
             predicate = predicate.and(qOrder.orderNumber.containsIgnoreCase(keyword))
+        }
+        if (status != null) {
+            predicate = predicate.and(qOrder.status.eq(status))
+        }
+        if (fromDate != null) {
+            predicate = predicate.and(qOrder.orderedAt.goe(fromDate.atStartOfDay()))
+        }
+        if (toDate != null) {
+            predicate = predicate.and(qOrder.orderedAt.loe(toDate.atTime(23, 59, 59)))
+        }
+        if (!paymentStatus.isNullOrBlank()) {
+            val matchingOrderIds = jpaQueryFactory
+                .select(qPayment.order.id)
+                .from(qPayment)
+                .where(qPayment.status.stringValue().eq(paymentStatus))
+                .fetch()
+            predicate = predicate.and(qOrder.id.`in`(matchingOrderIds))
         }
 
         val content = jpaQueryFactory

@@ -1,5 +1,6 @@
 package com.chaltteok.core.repository.product
 
+import com.chaltteok.core.domain.Product
 import com.chaltteok.core.domain.QProduct
 import com.chaltteok.core.domain.QProductOption
 import com.chaltteok.core.repository.product.dto.ProductWithOptionRow
@@ -33,6 +34,18 @@ class ProductRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Prod
             .from(qProduct)
             .join(qOption).on(qOption.product.id.eq(qProduct.id))
             .orderBy(qProduct.id.desc())
+            .fetch()
+    }
+
+    override fun searchByKeyword(keyword: String): List<Product> {
+        val qProduct = QProduct.product
+        return jpaQueryFactory
+            .selectFrom(qProduct)
+            .where(
+                qProduct.isActive.isTrue,
+                qProduct.name.containsIgnoreCase(keyword),
+            )
+            .orderBy(qProduct.name.asc())
             .fetch()
     }
 }

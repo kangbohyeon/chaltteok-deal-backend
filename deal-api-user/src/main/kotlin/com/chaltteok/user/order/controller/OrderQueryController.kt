@@ -18,9 +18,15 @@ class OrderQueryController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) fromDate: String?,
+        @RequestParam(required = false) toDate: String?,
+        @RequestParam(required = false) paymentStatus: String?,
     ): ResponseDTO<OrderHistoryPageResponse> {
         val pageable = PageRequest.of(page, size.coerceIn(1, 50))
-        return ResponseDTO.success(orderQueryService.getOrderHistory(userId, keyword, pageable))
+        return ResponseDTO.success(
+            orderQueryService.getOrderHistory(userId, keyword, status, fromDate, toDate, paymentStatus, pageable)
+        )
     }
 
     @GetMapping("/{orderNumber}")

@@ -5,6 +5,7 @@ import com.chaltteok.user.product.dto.ProductResponse
 import com.chaltteok.user.product.service.ProductQueryService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -19,4 +20,8 @@ class ProductQueryController(
     @GetMapping("/recommended")
     fun getRecommendedProducts(): ResponseDTO<List<ProductResponse>> =
         ResponseDTO.success(productQueryService.getRecommendedProducts())
+
+    @GetMapping("/search")
+    fun searchProducts(@RequestParam keyword: String): ResponseDTO<List<ProductResponse>> =
+        ResponseDTO.success(productQueryService.searchProducts(keyword))
 }
