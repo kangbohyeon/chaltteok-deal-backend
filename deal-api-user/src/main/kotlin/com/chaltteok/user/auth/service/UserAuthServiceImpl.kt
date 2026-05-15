@@ -28,7 +28,9 @@ class UserAuthServiceImpl(
         val user = userRepository.findByEmail(email)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
-        if (user.password != null && !passwordEncoder.matches(password, user.password)) {
+        val storedPassword = user.password
+            ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
+        if (!passwordEncoder.matches(password, storedPassword)) {
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
         }
 
