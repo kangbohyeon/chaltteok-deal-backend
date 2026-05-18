@@ -15,6 +15,7 @@ class ProductQueryServiceImpl(
     @Transactional(readOnly = true)
     override fun getProducts(): List<ProductResponse> {
         val products = productRepository.findAllByIsActiveTrue()
+        if (products.isEmpty()) return emptyList()
         val countMap = commentRepository.countRootCommentsByProductIds(products.mapNotNull { it.id })
             .associate { it.productId to it.cnt.toInt() }
         return products.map { ProductResponse.from(it, countMap[it.id!!] ?: 0) }
@@ -23,6 +24,7 @@ class ProductQueryServiceImpl(
     @Transactional(readOnly = true)
     override fun getRecommendedProducts(): List<ProductResponse> {
         val products = productRepository.findAllByIsActiveTrueAndIsRecommendedTrue()
+        if (products.isEmpty()) return emptyList()
         val countMap = commentRepository.countRootCommentsByProductIds(products.mapNotNull { it.id })
             .associate { it.productId to it.cnt.toInt() }
         return products.map { ProductResponse.from(it, countMap[it.id!!] ?: 0) }
@@ -31,6 +33,7 @@ class ProductQueryServiceImpl(
     @Transactional(readOnly = true)
     override fun searchProducts(keyword: String): List<ProductResponse> {
         val products = productRepository.searchByKeyword(keyword)
+        if (products.isEmpty()) return emptyList()
         val countMap = commentRepository.countRootCommentsByProductIds(products.mapNotNull { it.id })
             .associate { it.productId to it.cnt.toInt() }
         return products.map { ProductResponse.from(it, countMap[it.id!!] ?: 0) }
