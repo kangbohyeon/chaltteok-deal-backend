@@ -20,8 +20,10 @@ class UserCommentServiceImpl(
     @Transactional(readOnly = true)
     override fun getComments(productUuid: String, requestingUserId: Long?): List<CommentResponse> {
         val roots = commentRepository.findRootCommentsByProductUuid(productUuid)
+            .filter { !it.isSecret || it.userId == requestingUserId }
         if (roots.isEmpty()) return emptyList()
         val replyMap = commentRepository.findRepliesByParentIds(roots.mapNotNull { it.id })
+            .filter { !it.isSecret || it.userId == requestingUserId }
             .groupBy { it.parentId }
         return roots.map { root ->
             CommentResponse.from(root, replyMap[root.id] ?: emptyList(), requestingUserId)

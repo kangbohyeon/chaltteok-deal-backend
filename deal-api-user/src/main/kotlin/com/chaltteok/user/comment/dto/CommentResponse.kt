@@ -19,20 +19,16 @@ class CommentResponse(
             comment: Comment,
             replies: List<Comment> = emptyList(),
             requestingUserId: Long?,
-            isOwner: Boolean = false,
-        ): CommentResponse {
-            val secretMasked = comment.isSecret && requestingUserId != comment.userId && !isOwner
-            return CommentResponse(
-                commentUuid = comment.commentUuid,
-                userId = comment.userId,
-                content = if (secretMasked) "비밀 댓글입니다." else comment.content,
-                rating = comment.rating,
-                isSecret = comment.isSecret,
-                isOwnerReply = comment.isOwnerReply,
-                replies = replies.map { from(it, emptyList(), requestingUserId, isOwner) },
-                createdAt = comment.createdAt,
-                isMine = requestingUserId == comment.userId,
-            )
-        }
+        ): CommentResponse = CommentResponse(
+            commentUuid = comment.commentUuid,
+            userId = comment.userId,
+            content = comment.content,
+            rating = comment.rating,
+            isSecret = comment.isSecret,
+            isOwnerReply = comment.isOwnerReply,
+            replies = replies.map { from(it, emptyList(), requestingUserId) },
+            createdAt = comment.createdAt,
+            isMine = requestingUserId == comment.userId,
+        )
     }
 }
