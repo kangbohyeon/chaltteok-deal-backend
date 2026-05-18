@@ -39,6 +39,7 @@ interface CommentRepository : JpaRepository<Comment, Long> {
         FROM Comment c
         WHERE c.product.id IN :productIds
         AND c.parentId IS NULL
+        AND c.isSecret = false
         GROUP BY c.product.id
     """)
     fun countRootCommentsByProductIds(@Param("productIds") productIds: List<Long>): List<CommentCountProjection>

@@ -1,8 +1,6 @@
 package com.chaltteok.core.domain
 
 import jakarta.persistence.*
-import java.time.LocalDate
-import java.time.LocalTime
 import java.util.UUID
 
 @Entity
@@ -11,26 +9,11 @@ class Notice(
     @Column(name = "title", nullable = false, length = 200)
     var title: String,
 
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     var content: String,
 
     @Column(name = "is_visible", nullable = false)
     var isVisible: Boolean = true,
-
-    @Column(name = "location", length = 50)
-    var location: String? = null,
-
-    @Column(name = "start_date")
-    var startDate: LocalDate? = null,
-
-    @Column(name = "end_date")
-    var endDate: LocalDate? = null,
-
-    @Column(name = "start_time")
-    var startTime: LocalTime? = null,
-
-    @Column(name = "end_time")
-    var endTime: LocalTime? = null,
 ) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
