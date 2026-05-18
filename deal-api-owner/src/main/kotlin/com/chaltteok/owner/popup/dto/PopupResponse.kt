@@ -3,6 +3,7 @@ package com.chaltteok.owner.popup.dto
 import com.chaltteok.core.domain.Notice
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 class PopupResponse(
     val popupUuid: String,
@@ -12,6 +13,8 @@ class PopupResponse(
     val location: String?,
     val startDate: LocalDate?,
     val endDate: LocalDate?,
+    val startTime: LocalTime?,
+    val endTime: LocalTime?,
     val createdAt: LocalDateTime,
 ) {
     companion object {
@@ -23,6 +26,8 @@ class PopupResponse(
             location = notice.location,
             startDate = notice.startDate,
             endDate = notice.endDate,
+            startTime = notice.startTime,
+            endTime = notice.endTime,
             createdAt = notice.createdAt,
         )
     }

@@ -2,6 +2,7 @@ package com.chaltteok.owner.popup.dto
 
 import jakarta.validation.constraints.NotBlank
 import java.time.LocalDate
+import java.time.LocalTime
 
 class PopupRequest(
     @field:NotBlank val title: String,
@@ -10,4 +11,6 @@ class PopupRequest(
     val location: String? = null,
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null,
+    val startTime: LocalTime? = null,
+    val endTime: LocalTime? = null,
 )
