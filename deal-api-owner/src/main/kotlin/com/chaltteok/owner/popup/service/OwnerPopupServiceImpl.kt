@@ -29,6 +29,8 @@ class OwnerPopupServiceImpl(
             location = request.location,
             startDate = request.startDate,
             endDate = request.endDate,
+            startTime = request.startTime,
+            endTime = request.endTime,
         )
         noticeRepository.save(notice)
     }
@@ -43,6 +45,8 @@ class OwnerPopupServiceImpl(
         notice.location = request.location
         notice.startDate = request.startDate
         notice.endDate = request.endDate
+        notice.startTime = request.startTime
+        notice.endTime = request.endTime
     }
 
     @Transactional
