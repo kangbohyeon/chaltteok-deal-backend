@@ -1,6 +1,6 @@
 package com.chaltteok.user.popup.dto
 
-import com.chaltteok.core.domain.Notice
+import com.chaltteok.core.domain.Popup
 import java.time.LocalDate
 
 class PopupResponse(
@@ -12,13 +12,13 @@ class PopupResponse(
     val endDate: LocalDate?,
 ) {
     companion object {
-        fun from(notice: Notice) = PopupResponse(
-            popupUuid = notice.noticeUuid,
-            title = notice.title,
-            content = notice.content,
-            location = notice.location,
-            startDate = notice.startDate,
-            endDate = notice.endDate,
+        fun from(popup: Popup) = PopupResponse(
+            popupUuid = popup.popupUuid,
+            title = popup.title,
+            content = popup.content,
+            location = popup.location,
+            startDate = popup.startDate,
+            endDate = popup.endDate,
         )
     }
 }
