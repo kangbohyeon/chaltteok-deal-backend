@@ -1,6 +1,7 @@
 package com.chaltteok.owner.comment.controller
 
 import com.chaltteok.common.dto.ResponseDTO
+import com.chaltteok.owner.comment.dto.OwnerCommentPageResponse
 import com.chaltteok.owner.comment.dto.OwnerCommentResponse
 import com.chaltteok.owner.comment.dto.OwnerReplyRequest
 import com.chaltteok.owner.comment.service.OwnerCommentService
@@ -13,8 +14,11 @@ import org.springframework.web.bind.annotation.*
 class OwnerCommentController(private val ownerCommentService: OwnerCommentService) {
 
     @GetMapping
-    fun getAll(): ResponseDTO<List<OwnerCommentResponse>> =
-        ResponseDTO.success(ownerCommentService.getAll())
+    fun getAll(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") size: Int,
+    ): ResponseDTO<OwnerCommentPageResponse> =
+        ResponseDTO.success(ownerCommentService.getAll(page, size))
 
     @DeleteMapping("/{commentUuid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

@@ -6,4 +6,5 @@ import com.chaltteok.user.auth.dto.RegisterRequest
 interface UserAuthService {
     fun login(email: String, password: String): LoginResponseDto
     fun register(request: RegisterRequest)
+    fun existsByEmail(email: String): Boolean
 }

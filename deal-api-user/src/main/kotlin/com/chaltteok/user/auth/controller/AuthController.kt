@@ -11,10 +11,7 @@ import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.user.auth.dto.RegisterRequest
 import com.chaltteok.user.auth.service.UserAuthService
 import jakarta.validation.Valid
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/user/auth")
@@ -32,6 +29,10 @@ class AuthController(
         userAuthService.register(request)
         return ResponseDTO.success(Unit)
     }
+
+    @GetMapping("/check-email")
+    fun checkEmail(@RequestParam email: String): ResponseDTO<Map<String, Boolean>> =
+        ResponseDTO.success(mapOf("duplicate" to userAuthService.existsByEmail(email)))
 
     @PostMapping("/reissue")
     fun reissue(@RequestBody request: ReissueRequest): ResponseDTO<TokenDto> {

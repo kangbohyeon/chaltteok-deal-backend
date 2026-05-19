@@ -5,10 +5,13 @@ import com.chaltteok.core.domain.Comment
 import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.user.comment.dto.CommentPageResponse
 import com.chaltteok.user.comment.dto.CommentRequest
 import com.chaltteok.user.comment.dto.CommentResponse
 import com.chaltteok.user.comment.dto.ReplyRequest
 import com.chaltteok.user.comment.enums.CommentErrorCode
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,17 +23,20 @@ class UserCommentServiceImpl(
 ) : UserCommentService {
 
     @Transactional(readOnly = true)
-    override fun getComments(productUuid: String, requestingUserId: Long?): List<CommentResponse> {
-        val roots = commentRepository.findRootCommentsByProductUuid(productUuid)
-        if (roots.isEmpty()) return emptyList()
+    override fun getComments(productUuid: String, requestingUserId: Long?, page: Int, size: Int): CommentPageResponse {
+        val pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending())
+        val rootPage = commentRepository.findRootCommentsByProductUuidPaged(productUuid, pageable)
+        val roots = rootPage.content
+        if (roots.isEmpty()) return CommentPageResponse(emptyList(), rootPage.totalElements, rootPage.totalPages, page, size)
         val replies = commentRepository.findRepliesByParentIds(roots.mapNotNull { it.id })
         val allComments = roots + replies
         val userIds = allComments.filter { !it.isOwnerReply }.map { it.userId }.distinct()
         val nicknameMap = userRepository.findAllById(userIds).associate { it.id!! to it.nickname }
         val replyMap = replies.groupBy { it.parentId }
-        return roots.map { root ->
+        val content = roots.map { root ->
             CommentResponse.from(root, replyMap[root.id] ?: emptyList(), requestingUserId, nicknameMap)
         }
+        return CommentPageResponse(content, rootPage.totalElements, rootPage.totalPages, page, size)
     }
 
     @Transactional

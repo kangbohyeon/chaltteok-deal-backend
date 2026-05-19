@@ -3,8 +3,11 @@ package com.chaltteok.owner.inquiry.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.repository.inquiry.InquiryRepository
 import com.chaltteok.owner.inquiry.dto.AnswerRequest
+import com.chaltteok.owner.inquiry.dto.OwnerInquiryPageResponse
 import com.chaltteok.owner.inquiry.dto.OwnerInquiryResponse
 import com.chaltteok.owner.inquiry.enums.InquiryErrorCode
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -15,8 +18,17 @@ class OwnerInquiryServiceImpl(
 ) : OwnerInquiryService {
 
     @Transactional(readOnly = true)
-    override fun getAll(): List<OwnerInquiryResponse> =
-        inquiryRepository.findAllByOrderByCreatedAtDesc().map { OwnerInquiryResponse.from(it) }
+    override fun getAll(page: Int, size: Int): OwnerInquiryPageResponse {
+        val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
+        val inquiryPage = inquiryRepository.findAllByOrderByCreatedAtDesc(pageable)
+        return OwnerInquiryPageResponse(
+            content = inquiryPage.content.map { OwnerInquiryResponse.from(it) },
+            totalElements = inquiryPage.totalElements,
+            totalPages = inquiryPage.totalPages,
+            currentPage = page,
+            pageSize = size,
+        )
+    }
 
     @Transactional
     override fun answer(inquiryUuid: String, request: AnswerRequest) {
