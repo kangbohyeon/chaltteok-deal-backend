@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 class CommentResponse(
     val commentUuid: String,
-    val userId: Long,
+    val nickname: String?,
     val content: String,
     val rating: Int?,
     val isSecret: Boolean,
@@ -19,14 +19,15 @@ class CommentResponse(
             comment: Comment,
             replies: List<Comment> = emptyList(),
             requestingUserId: Long?,
+            nicknameMap: Map<Long, String> = emptyMap(),
         ): CommentResponse = CommentResponse(
             commentUuid = comment.commentUuid,
-            userId = comment.userId,
+            nickname = if (comment.isOwnerReply) null else nicknameMap[comment.userId],
             content = comment.content,
             rating = comment.rating,
             isSecret = comment.isSecret,
             isOwnerReply = comment.isOwnerReply,
-            replies = replies.map { from(it, emptyList(), requestingUserId) },
+            replies = replies.map { from(it, emptyList(), requestingUserId, nicknameMap) },
             createdAt = comment.createdAt,
             isMine = requestingUserId == comment.userId,
         )
