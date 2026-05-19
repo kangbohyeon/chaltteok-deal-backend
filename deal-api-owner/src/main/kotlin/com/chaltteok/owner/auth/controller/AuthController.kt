@@ -23,7 +23,7 @@ class AuthController(
 ) {
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseDTO<LoginResponseDto> =
-        ResponseDTO.success(ownerAuthService.login(request.email, request.password))
+        ResponseDTO.success(ownerAuthService.login(request.username, request.password))
 
     @PostMapping("/reissue")
     fun reissue(@Valid @RequestBody request: ReissueRequest): ResponseDTO<TokenDto> {

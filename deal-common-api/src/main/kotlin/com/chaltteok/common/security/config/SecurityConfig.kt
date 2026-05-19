@@ -34,6 +34,7 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/owner/**").hasAuthority("ROLE_OWNER")
                     // user — 로그인 없이 접근 가능한 공개 엔드포인트
                     .requestMatchers("/api/v1/user/auth/**").permitAll()
+                    .requestMatchers("/api/v1/user/notices/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/user/daily-stocks/open").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/user/products/**").permitAll()
                     // 정적 이미지 파일 공개 접근
