@@ -1,6 +1,8 @@
 package com.chaltteok.core.repository.comment
 
 import com.chaltteok.core.domain.Comment
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -30,9 +32,24 @@ interface CommentRepository : JpaRepository<Comment, Long> {
 
     @Query("""
         SELECT c FROM Comment c
+        WHERE c.product.productUuid = :productUuid
+        AND c.parentId IS NULL
+        ORDER BY c.createdAt ASC
+    """)
+    fun findRootCommentsByProductUuidPaged(@Param("productUuid") productUuid: String, pageable: Pageable): Page<Comment>
+
+    @Query("""
+        SELECT c FROM Comment c
         ORDER BY c.createdAt DESC
     """)
     fun findAllOrderByCreatedAtDesc(): List<Comment>
+
+    @Query(value = """
+        SELECT c FROM Comment c
+        WHERE c.parentId IS NULL
+        ORDER BY c.createdAt DESC
+    """, countQuery = "SELECT COUNT(c) FROM Comment c WHERE c.parentId IS NULL")
+    fun findRootCommentsPagedForOwner(pageable: Pageable): Page<Comment>
 
     @Query("""
         SELECT c.product.id AS productId, COUNT(c) AS cnt

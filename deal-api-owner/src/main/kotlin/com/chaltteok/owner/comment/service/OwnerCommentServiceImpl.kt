@@ -3,9 +3,12 @@ package com.chaltteok.owner.comment.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Comment
 import com.chaltteok.core.repository.comment.CommentRepository
+import com.chaltteok.owner.comment.dto.OwnerCommentPageResponse
 import com.chaltteok.owner.comment.dto.OwnerCommentResponse
 import com.chaltteok.owner.comment.dto.OwnerReplyRequest
 import com.chaltteok.owner.comment.enums.OwnerCommentErrorCode
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -15,8 +18,19 @@ class OwnerCommentServiceImpl(
 ) : OwnerCommentService {
 
     @Transactional(readOnly = true)
-    override fun getAll(): List<OwnerCommentResponse> =
-        commentRepository.findAllOrderByCreatedAtDesc().map { OwnerCommentResponse.from(it) }
+    override fun getAll(page: Int, size: Int): OwnerCommentPageResponse {
+        val pageable = PageRequest.of(page, size, Sort.by("createdAt").descending())
+        val rootPage = commentRepository.findRootCommentsPagedForOwner(pageable)
+        val roots = rootPage.content
+        val replies = if (roots.isNotEmpty())
+            commentRepository.findRepliesByParentIds(roots.mapNotNull { it.id })
+        else emptyList()
+        val replyMap = replies.groupBy { it.parentId }
+        val content = roots.map { root ->
+            OwnerCommentResponse.fromWithReplies(root, replyMap[root.id] ?: emptyList())
+        }
+        return OwnerCommentPageResponse(content, rootPage.totalElements, rootPage.totalPages, page, size)
+    }
 
     @Transactional
     override fun delete(commentUuid: String) {

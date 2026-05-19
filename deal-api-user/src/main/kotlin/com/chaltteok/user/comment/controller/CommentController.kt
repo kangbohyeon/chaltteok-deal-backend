@@ -1,6 +1,7 @@
 package com.chaltteok.user.comment.controller
 
 import com.chaltteok.common.dto.ResponseDTO
+import com.chaltteok.user.comment.dto.CommentPageResponse
 import com.chaltteok.user.comment.dto.CommentRequest
 import com.chaltteok.user.comment.dto.CommentResponse
 import com.chaltteok.user.comment.dto.ReplyRequest
@@ -17,8 +18,10 @@ class CommentController(private val userCommentService: UserCommentService) {
     fun getComments(
         @PathVariable productUuid: String,
         @RequestHeader(value = "X-User-Id", required = false) userId: Long?,
-    ): ResponseDTO<List<CommentResponse>> =
-        ResponseDTO.success(userCommentService.getComments(productUuid, userId))
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") size: Int,
+    ): ResponseDTO<CommentPageResponse> =
+        ResponseDTO.success(userCommentService.getComments(productUuid, userId, page, size))
 
     @PostMapping("/products/{productUuid}/comments")
     @ResponseStatus(HttpStatus.CREATED)

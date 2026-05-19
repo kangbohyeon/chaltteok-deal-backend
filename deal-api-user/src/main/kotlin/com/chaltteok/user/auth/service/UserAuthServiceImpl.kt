@@ -58,4 +58,7 @@ class UserAuthServiceImpl(
         user.password = passwordEncoder.encode(request.password)
         userRepository.save(user)
     }
+
+    @Transactional(readOnly = true)
+    override fun existsByEmail(email: String): Boolean = userRepository.existsByEmail(email)
 }
