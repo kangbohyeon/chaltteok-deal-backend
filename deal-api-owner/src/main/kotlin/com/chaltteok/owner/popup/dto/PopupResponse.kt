@@ -1,6 +1,7 @@
 package com.chaltteok.owner.popup.dto
 
 import com.chaltteok.core.domain.Popup
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -9,7 +10,7 @@ class PopupResponse(
     val popupUuid: String,
     val title: String,
     val content: String,
-    val isVisible: Boolean,
+    @get:JsonProperty("isVisible") val isVisible: Boolean,
     val location: String?,
     val startDate: LocalDate?,
     val endDate: LocalDate?,
