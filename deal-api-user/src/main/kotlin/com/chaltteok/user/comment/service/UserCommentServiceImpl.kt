@@ -4,6 +4,7 @@ import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Comment
 import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.product.ProductRepository
+import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.comment.dto.CommentRequest
 import com.chaltteok.user.comment.dto.CommentResponse
 import com.chaltteok.user.comment.dto.ReplyRequest
@@ -15,18 +16,20 @@ import org.springframework.transaction.annotation.Transactional
 class UserCommentServiceImpl(
     private val commentRepository: CommentRepository,
     private val productRepository: ProductRepository,
+    private val userRepository: UserRepository,
 ) : UserCommentService {
 
     @Transactional(readOnly = true)
     override fun getComments(productUuid: String, requestingUserId: Long?): List<CommentResponse> {
         val roots = commentRepository.findRootCommentsByProductUuid(productUuid)
-            .filter { !it.isSecret || it.userId == requestingUserId }
         if (roots.isEmpty()) return emptyList()
-        val replyMap = commentRepository.findRepliesByParentIds(roots.mapNotNull { it.id })
-            .filter { !it.isSecret || it.userId == requestingUserId }
-            .groupBy { it.parentId }
+        val replies = commentRepository.findRepliesByParentIds(roots.mapNotNull { it.id })
+        val allComments = roots + replies
+        val userIds = allComments.filter { !it.isOwnerReply }.map { it.userId }.distinct()
+        val nicknameMap = userRepository.findAllById(userIds).associate { it.id!! to it.nickname }
+        val replyMap = replies.groupBy { it.parentId }
         return roots.map { root ->
-            CommentResponse.from(root, replyMap[root.id] ?: emptyList(), requestingUserId)
+            CommentResponse.from(root, replyMap[root.id] ?: emptyList(), requestingUserId, nicknameMap)
         }
     }
 
@@ -43,7 +46,8 @@ class UserCommentServiceImpl(
                 isSecret = request.isSecret,
             )
         )
-        return CommentResponse.from(comment, emptyList(), userId)
+        val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
+        return CommentResponse.from(comment, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())
     }
 
     @Transactional
@@ -58,7 +62,8 @@ class UserCommentServiceImpl(
                 parentId = parent.id,
             )
         )
-        return CommentResponse.from(reply, emptyList(), userId)
+        val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
+        return CommentResponse.from(reply, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())
     }
 
     @Transactional
@@ -69,7 +74,8 @@ class UserCommentServiceImpl(
         comment.content = request.content
         comment.rating = request.rating
         comment.isSecret = request.isSecret
-        return CommentResponse.from(comment, emptyList(), userId)
+        val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
+        return CommentResponse.from(comment, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())
     }
 
     @Transactional
