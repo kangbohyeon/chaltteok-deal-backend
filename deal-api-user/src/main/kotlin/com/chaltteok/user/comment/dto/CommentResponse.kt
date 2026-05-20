@@ -1,6 +1,7 @@
 package com.chaltteok.user.comment.dto
 
 import com.chaltteok.core.domain.Comment
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
 class CommentResponse(
@@ -8,11 +9,11 @@ class CommentResponse(
     val nickname: String?,
     val content: String,
     val rating: Int?,
-    val isSecret: Boolean,
-    val isOwnerReply: Boolean,
+    @get:JsonProperty("isSecret") val isSecret: Boolean,
+    @get:JsonProperty("isOwnerReply") val isOwnerReply: Boolean,
     val replies: List<CommentResponse>,
     val createdAt: LocalDateTime,
-    val isMine: Boolean,
+    @get:JsonProperty("isMine") val isMine: Boolean,
 ) {
     companion object {
         fun from(
