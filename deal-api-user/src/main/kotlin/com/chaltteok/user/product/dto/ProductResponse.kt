@@ -11,9 +11,10 @@ data class ProductResponse(
     val thumbnailUrl: String?,
     val soldOut: Boolean,
     val commentCount: Int = 0,
+    val averageRating: Double? = null,
 ) {
     companion object {
-        fun from(product: Product, commentCount: Int = 0) = ProductResponse(
+        fun from(product: Product, commentCount: Int = 0, averageRating: Double? = null) = ProductResponse(
             id = product.id!!,
             productUuid = product.productUuid,
             name = product.name,
@@ -22,6 +23,7 @@ data class ProductResponse(
             thumbnailUrl = product.imageUrl,
             soldOut = product.isSoldOut,
             commentCount = commentCount,
+            averageRating = averageRating,
         )
     }
 }

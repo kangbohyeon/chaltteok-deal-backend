@@ -12,6 +12,11 @@ interface CommentCountProjection {
     val cnt: Long
 }
 
+interface AverageRatingProjection {
+    val productId: Long
+    val avg: Double?
+}
+
 interface CommentRepository : JpaRepository<Comment, Long> {
     fun findByCommentUuid(uuid: String): Comment?
 
@@ -56,8 +61,17 @@ interface CommentRepository : JpaRepository<Comment, Long> {
         FROM Comment c
         WHERE c.product.id IN :productIds
         AND c.parentId IS NULL
-        AND c.isSecret = false
         GROUP BY c.product.id
     """)
     fun countRootCommentsByProductIds(@Param("productIds") productIds: List<Long>): List<CommentCountProjection>
+
+    @Query("""
+        SELECT c.product.id AS productId, AVG(CAST(c.rating AS double)) AS avg
+        FROM Comment c
+        WHERE c.product.id IN :productIds
+        AND c.parentId IS NULL
+        AND c.rating IS NOT NULL
+        GROUP BY c.product.id
+    """)
+    fun avgRatingByProductIds(@Param("productIds") productIds: List<Long>): List<AverageRatingProjection>
 }
