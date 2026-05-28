@@ -4,8 +4,10 @@ import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.domain.Product
 import com.chaltteok.user.product.dto.ProductResponse
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
 
 @Service
 class ProductQueryServiceImpl(
@@ -17,6 +19,18 @@ class ProductQueryServiceImpl(
     override fun getProducts(): List<ProductResponse> {
         val products = productRepository.findAllByIsActiveTrue()
         return buildResponses(products)
+    }
+
+    @Transactional(readOnly = true)
+    override fun getProductByUuid(productUuid: String): ProductResponse {
+        val product = productRepository.findByProductUuid(productUuid)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: $productUuid")
+        val id = product.id!!
+        val commentCount = commentRepository.countRootCommentsByProductIds(listOf(id))
+            .firstOrNull()?.cnt?.toInt() ?: 0
+        val averageRating = commentRepository.avgRatingByProductIds(listOf(id))
+            .firstOrNull()?.avg
+        return ProductResponse.from(product, commentCount, averageRating)
     }
 
     @Transactional(readOnly = true)
