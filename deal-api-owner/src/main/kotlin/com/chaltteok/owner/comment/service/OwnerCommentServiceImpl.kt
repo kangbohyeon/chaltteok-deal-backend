@@ -3,6 +3,7 @@ package com.chaltteok.owner.comment.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Comment
 import com.chaltteok.core.repository.comment.CommentRepository
+import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.owner.comment.dto.OwnerCommentPageResponse
 import com.chaltteok.owner.comment.dto.OwnerCommentResponse
 import com.chaltteok.owner.comment.dto.OwnerReplyRequest
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class OwnerCommentServiceImpl(
     private val commentRepository: CommentRepository,
+    private val userRepository: UserRepository,
 ) : OwnerCommentService {
 
     @Transactional(readOnly = true)
@@ -25,9 +27,16 @@ class OwnerCommentServiceImpl(
         val replies = if (roots.isNotEmpty())
             commentRepository.findRepliesByParentIds(roots.mapNotNull { it.id })
         else emptyList()
+
+        val userIds = (roots + replies)
+            .filter { !it.isOwnerReply }
+            .map { it.userId }
+            .distinct()
+        val uuidMap = userRepository.findAllById(userIds).associate { it.id!! to it.userUuid }
+
         val replyMap = replies.groupBy { it.parentId }
         val content = roots.map { root ->
-            OwnerCommentResponse.fromWithReplies(root, replyMap[root.id] ?: emptyList())
+            OwnerCommentResponse.fromWithReplies(root, replyMap[root.id] ?: emptyList(), uuidMap)
         }
         return OwnerCommentPageResponse(content, rootPage.totalElements, rootPage.totalPages, page, size)
     }
