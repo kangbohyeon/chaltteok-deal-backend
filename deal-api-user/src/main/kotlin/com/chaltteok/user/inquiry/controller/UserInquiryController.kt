@@ -6,6 +6,7 @@ import com.chaltteok.user.inquiry.dto.InquiryResponse
 import com.chaltteok.user.inquiry.service.UserInquiryService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -13,16 +14,18 @@ import org.springframework.web.bind.annotation.*
 class UserInquiryController(private val userInquiryService: UserInquiryService) {
 
     @GetMapping
-    fun getMyInquiries(
-        @RequestHeader("X-User-Id") userId: Long,
-    ): ResponseDTO<List<InquiryResponse>> =
-        ResponseDTO.success(userInquiryService.getMyInquiries(userId))
+    fun getMyInquiries(authentication: Authentication): ResponseDTO<List<InquiryResponse>> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userInquiryService.getMyInquiries(userId))
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
-        @RequestHeader("X-User-Id") userId: Long,
+        authentication: Authentication,
         @Valid @RequestBody request: InquiryRequest,
-    ): ResponseDTO<InquiryResponse> =
-        ResponseDTO.success(userInquiryService.create(userId, request))
+    ): ResponseDTO<InquiryResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userInquiryService.create(userId, request))
+    }
 }
