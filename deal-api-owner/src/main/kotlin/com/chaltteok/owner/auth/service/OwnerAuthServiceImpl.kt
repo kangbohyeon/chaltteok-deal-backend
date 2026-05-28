@@ -30,13 +30,13 @@ class OwnerAuthServiceImpl(
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
         }
 
-        val userId = owner.id ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
+        val ownerId = owner.id ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
 
         val requirePasswordChange = owner.passwordChangedAt == null ||
             owner.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(90))
 
-        val accessToken = jwtTokenProvider.generateAccessToken(userId, ROLE)
-        val refreshToken = jwtTokenProvider.generateRefreshToken(userId, ROLE)
-        return LoginResponseDto(accessToken, refreshToken, userId, requirePasswordChange)
+        val accessToken = jwtTokenProvider.generateAccessToken(ownerId, ROLE)
+        val refreshToken = jwtTokenProvider.generateRefreshToken(ownerId, ROLE)
+        return LoginResponseDto(accessToken, refreshToken, owner.ownerUuid, requirePasswordChange)
     }
 }
