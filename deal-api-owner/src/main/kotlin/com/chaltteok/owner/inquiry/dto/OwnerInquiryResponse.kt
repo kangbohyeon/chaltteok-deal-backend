@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 class OwnerInquiryResponse(
     val inquiryUuid: String,
-    val userId: Long,
+    val userUuid: String,
     val title: String,
     val content: String,
     val status: String,
@@ -14,9 +14,9 @@ class OwnerInquiryResponse(
     val createdAt: LocalDateTime,
 ) {
     companion object {
-        fun from(inquiry: Inquiry) = OwnerInquiryResponse(
+        fun from(inquiry: Inquiry, userUuid: String) = OwnerInquiryResponse(
             inquiryUuid = inquiry.inquiryUuid,
-            userId = inquiry.userId,
+            userUuid = userUuid,
             title = inquiry.title,
             content = inquiry.content,
             status = inquiry.status,
