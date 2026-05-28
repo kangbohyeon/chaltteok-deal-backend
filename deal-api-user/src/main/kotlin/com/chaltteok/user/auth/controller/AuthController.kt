@@ -8,6 +8,7 @@ import com.chaltteok.common.security.dto.ReissueRequest
 import com.chaltteok.common.security.dto.TokenDto
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
+import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
 import com.chaltteok.user.auth.service.UserAuthService
 import jakarta.validation.Valid
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*
 class AuthController(
     private val userAuthService: UserAuthService,
     private val jwtTokenProvider: JwtTokenProvider,
+    private val userRepository: UserRepository,
 ) {
 
     @PostMapping("/login")
@@ -48,6 +50,9 @@ class AuthController(
 
         val newAccess = jwtTokenProvider.generateAccessToken(id, storedRole)
         val newRefresh = jwtTokenProvider.generateRefreshToken(id, storedRole)
-        return ResponseDTO.success(TokenDto(newAccess, newRefresh, id))
+        val userUuid = userRepository.findById(id)
+            .orElseThrow { BusinessException(AuthErrorCode.INVALID_TOKEN) }
+            .userUuid
+        return ResponseDTO.success(TokenDto(newAccess, newRefresh, userUuid))
     }
 }

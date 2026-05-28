@@ -40,7 +40,7 @@ class UserAuthServiceImpl(
 
         val accessToken = jwtTokenProvider.generateAccessToken(user.id!!, ROLE)
         val refreshToken = jwtTokenProvider.generateRefreshToken(user.id!!, ROLE)
-        return LoginResponseDto(accessToken, refreshToken, user.id!!, requirePasswordChange)
+        return LoginResponseDto(accessToken, refreshToken, user.userUuid, requirePasswordChange)
     }
 
     @Transactional

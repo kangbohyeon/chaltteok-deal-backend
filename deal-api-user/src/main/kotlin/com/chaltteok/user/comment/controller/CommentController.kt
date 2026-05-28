@@ -8,6 +8,7 @@ import com.chaltteok.user.comment.dto.ReplyRequest
 import com.chaltteok.user.comment.service.UserCommentService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -17,44 +18,53 @@ class CommentController(private val userCommentService: UserCommentService) {
     @GetMapping("/products/{productUuid}/comments")
     fun getComments(
         @PathVariable productUuid: String,
-        @RequestHeader(value = "X-User-Id", required = false) userId: Long?,
+        authentication: Authentication?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
-    ): ResponseDTO<CommentPageResponse> =
-        ResponseDTO.success(userCommentService.getComments(productUuid, userId, page, size))
+    ): ResponseDTO<CommentPageResponse> {
+        val userId = authentication?.principal as? Long
+        return ResponseDTO.success(userCommentService.getComments(productUuid, userId, page, size))
+    }
 
     @PostMapping("/products/{productUuid}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     fun createComment(
         @PathVariable productUuid: String,
-        @RequestHeader("X-User-Id") userId: Long,
+        authentication: Authentication,
         @Valid @RequestBody request: CommentRequest,
-    ): ResponseDTO<CommentResponse> =
-        ResponseDTO.success(userCommentService.create(productUuid, userId, request))
+    ): ResponseDTO<CommentResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userCommentService.create(productUuid, userId, request))
+    }
 
     @PostMapping("/comments/{commentUuid}/reply")
     @ResponseStatus(HttpStatus.CREATED)
     fun replyComment(
         @PathVariable commentUuid: String,
-        @RequestHeader("X-User-Id") userId: Long,
+        authentication: Authentication,
         @Valid @RequestBody request: ReplyRequest,
-    ): ResponseDTO<CommentResponse> =
-        ResponseDTO.success(userCommentService.reply(commentUuid, userId, request))
+    ): ResponseDTO<CommentResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userCommentService.reply(commentUuid, userId, request))
+    }
 
     @PutMapping("/comments/{commentUuid}")
     fun updateComment(
         @PathVariable commentUuid: String,
-        @RequestHeader("X-User-Id") userId: Long,
+        authentication: Authentication,
         @Valid @RequestBody request: CommentRequest,
-    ): ResponseDTO<CommentResponse> =
-        ResponseDTO.success(userCommentService.update(commentUuid, userId, request))
+    ): ResponseDTO<CommentResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userCommentService.update(commentUuid, userId, request))
+    }
 
     @DeleteMapping("/comments/{commentUuid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteComment(
         @PathVariable commentUuid: String,
-        @RequestHeader("X-User-Id") userId: Long,
+        authentication: Authentication,
     ): ResponseDTO<Unit> {
+        val userId = authentication.principal as Long
         userCommentService.delete(commentUuid, userId)
         return ResponseDTO.success(Unit)
     }
