@@ -8,6 +8,8 @@ import java.time.LocalDate
 
 interface BannerRepository : JpaRepository<Banner, Long> {
 
+    fun findByBannerUuid(bannerUuid: String): Banner?
+
     @Query("""
         SELECT b FROM Banner b
         WHERE b.isVisible = true
