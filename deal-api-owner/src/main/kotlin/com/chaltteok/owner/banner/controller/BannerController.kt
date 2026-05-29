@@ -4,6 +4,7 @@ import com.chaltteok.common.dto.ResponseDTO
 import com.chaltteok.owner.banner.dto.BannerRequest
 import com.chaltteok.owner.banner.dto.BannerResponse
 import com.chaltteok.owner.banner.service.OwnerBannerService
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -24,7 +25,7 @@ class BannerController(private val ownerBannerService: OwnerBannerService) {
         ResponseDTO.success(ownerBannerService.getAll())
 
     @PostMapping
-    fun create(@RequestBody request: BannerRequest): ResponseEntity<ResponseDTO<Any>> {
+    fun create(@Valid @RequestBody request: BannerRequest): ResponseEntity<ResponseDTO<Any>> {
         ownerBannerService.create(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDTO.success())
     }
@@ -32,7 +33,7 @@ class BannerController(private val ownerBannerService: OwnerBannerService) {
     @PutMapping("/{bannerUuid}")
     fun update(
         @PathVariable bannerUuid: String,
-        @RequestBody request: BannerRequest,
+        @Valid @RequestBody request: BannerRequest,
     ): ResponseDTO<Any> {
         ownerBannerService.update(bannerUuid, request)
         return ResponseDTO.success()
