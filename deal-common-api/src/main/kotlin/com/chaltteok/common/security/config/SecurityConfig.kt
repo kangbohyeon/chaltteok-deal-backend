@@ -37,6 +37,8 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/user/notices/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/user/daily-stocks/open").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/user/products/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/user/banners/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/user/popups/**").permitAll()
                     // 정적 이미지 파일 공개 접근
                     .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
                     .anyRequest().authenticated()
