@@ -6,13 +6,16 @@ import com.chaltteok.core.repository.banner.BannerRepository
 import com.chaltteok.owner.banner.dto.BannerRequest
 import com.chaltteok.owner.banner.dto.BannerResponse
 import com.chaltteok.owner.banner.enums.BannerErrorCode
+import com.chaltteok.owner.product.util.LocalFileUploader
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 
 @Service
 class OwnerBannerServiceImpl(
     private val bannerRepository: BannerRepository,
+    private val localFileUploader: LocalFileUploader,
 ) : OwnerBannerService {
 
     @Transactional(readOnly = true)
@@ -21,11 +24,12 @@ class OwnerBannerServiceImpl(
             .map { BannerResponse.from(it) }
 
     @Transactional
-    override fun create(request: BannerRequest) {
+    override fun create(request: BannerRequest, image: MultipartFile?) {
+        val imageUrl = image?.takeIf { !it.isEmpty }?.let { localFileUploader.uploadFile(it) }
         val banner = Banner(
             title = request.title,
             subtitle = request.subtitle,
-            imageUrl = request.imageUrl,
+            imageUrl = imageUrl,
             linkUrl = request.linkUrl,
             backgroundColor = request.backgroundColor,
             sortOrder = request.sortOrder,
@@ -37,12 +41,17 @@ class OwnerBannerServiceImpl(
     }
 
     @Transactional
-    override fun update(bannerUuid: String, request: BannerRequest) {
+    override fun update(bannerUuid: String, request: BannerRequest, image: MultipartFile?) {
         val banner = bannerRepository.findByBannerUuid(bannerUuid)
             ?: throw BusinessException(BannerErrorCode.BANNER_NOT_FOUND)
+        val newImageUrl = image?.takeIf { !it.isEmpty }?.let { newImage ->
+            val uploaded = localFileUploader.uploadFile(newImage)
+            banner.imageUrl?.let { localFileUploader.deleteFile(it) }
+            uploaded
+        }
         banner.title = request.title
         banner.subtitle = request.subtitle
-        banner.imageUrl = request.imageUrl
+        if (newImageUrl != null) banner.imageUrl = newImageUrl
         banner.linkUrl = request.linkUrl
         banner.backgroundColor = request.backgroundColor
         banner.sortOrder = request.sortOrder
@@ -55,6 +64,7 @@ class OwnerBannerServiceImpl(
     override fun delete(bannerUuid: String) {
         val banner = bannerRepository.findByBannerUuid(bannerUuid)
             ?: throw BusinessException(BannerErrorCode.BANNER_NOT_FOUND)
+        banner.imageUrl?.let { localFileUploader.deleteFile(it) }
         bannerRepository.delete(banner)
     }
 }

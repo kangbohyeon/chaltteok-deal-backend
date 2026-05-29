@@ -8,7 +8,6 @@ import java.time.LocalDate
 class BannerRequest(
     @field:Size(max = 200) val title: String? = null,
     @field:Size(max = 400) val subtitle: String? = null,
-    @field:Pattern(regexp = "^(https?://.*)?$") val imageUrl: String? = null,
     @field:Pattern(regexp = "^(https?://.*)?$") val linkUrl: String? = null,
     @field:Pattern(regexp = "^(#[0-9A-Fa-f]{3,6})?$") val backgroundColor: String? = null,
     @field:Min(0) val sortOrder: Int = 0,
