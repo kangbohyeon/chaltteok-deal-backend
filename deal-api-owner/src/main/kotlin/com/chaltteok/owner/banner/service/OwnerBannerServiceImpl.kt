@@ -45,8 +45,9 @@ class OwnerBannerServiceImpl(
         val banner = bannerRepository.findByBannerUuid(bannerUuid)
             ?: throw BusinessException(BannerErrorCode.BANNER_NOT_FOUND)
         val newImageUrl = image?.takeIf { !it.isEmpty }?.let { newImage ->
+            val uploaded = localFileUploader.uploadFile(newImage)
             banner.imageUrl?.let { localFileUploader.deleteFile(it) }
-            localFileUploader.uploadFile(newImage)
+            uploaded
         }
         banner.title = request.title
         banner.subtitle = request.subtitle
