@@ -10,7 +10,7 @@ data class ProductResponse(
     val description: String?,
     val thumbnailUrl: String?,
     val soldOut: Boolean,
-    val recommended: Boolean,
+    val recommended: Boolean = false,
     val commentCount: Int = 0,
     val averageRating: Double? = null,
 ) {
