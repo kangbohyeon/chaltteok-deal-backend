@@ -27,6 +27,8 @@ class ProductRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Prod
                     qProduct.isActive,
                     qProduct.isSoldOut,
                     qProduct.isRecommended,
+                    qProduct.stockQuantity,
+                    qProduct.currentStock,
                     qOption.optionUuid,
                     qOption.price,
                 )

@@ -13,6 +13,8 @@ class ProductListResponse(
     val isActive: Boolean,
     val isSoldOut: Boolean,
     val isRecommended: Boolean,
+    val stockQuantity: Int?,
+    val currentStock: Int?,
 ) {
     companion object {
         fun from(row: ProductWithOptionRow) = ProductListResponse(
@@ -26,6 +28,8 @@ class ProductListResponse(
             isActive = row.isActive,
             isSoldOut = row.isSoldOut,
             isRecommended = row.isRecommended,
+            stockQuantity = row.stockQuantity,
+            currentStock = row.currentStock,
         )
     }
 }

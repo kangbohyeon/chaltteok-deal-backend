@@ -48,9 +48,15 @@ class ProductServiceImpl(
         product.description = request.descp
         product.price = request.price
         product.isActive = request.isActive
-        product.isSoldOut = request.isSoldOut
+        product.isSoldOut = request.isSoldOut || request.stockQuantity == 0
         product.isRecommended = request.isRecommended
         if (newImageUrl != null) product.imageUrl = newImageUrl
+        if (request.stockQuantity != null && request.stockQuantity != product.stockQuantity) {
+            product.stockQuantity = request.stockQuantity
+            product.currentStock = request.stockQuantity
+        } else if (request.stockQuantity != null) {
+            product.stockQuantity = request.stockQuantity
+        }
     }
 
     @Transactional

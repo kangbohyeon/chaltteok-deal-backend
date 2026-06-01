@@ -32,6 +32,12 @@ class Product(
     @Column(name = "is_recommended")
     var isRecommended: Boolean = false,
 
+    @Column(name = "stock_quantity")
+    var stockQuantity: Int? = null,
+
+    @Column(name = "current_stock")
+    var currentStock: Int? = null,
+
 ) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
