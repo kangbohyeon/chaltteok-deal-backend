@@ -12,16 +12,11 @@ private val logger = KotlinLogging.logger {}
 class ProductStockScheduler(
     private val productRepository: ProductRepository,
 ) {
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     @Transactional
     fun resetDailyStock() {
-        val products = productRepository.findAllByStockQuantityIsNotNull()
-        products.forEach { product ->
-            product.currentStock = product.stockQuantity
-            if ((product.stockQuantity ?: 0) > 0) {
-                product.isSoldOut = false
-            }
-        }
-        logger.info { "Daily stock reset completed: ${products.size} products" }
+        val reset = productRepository.resetDailyStockForActiveProducts()
+        productRepository.markZeroStockAsSoldOut()
+        logger.info { "Daily stock reset completed: $reset products restored" }
     }
 }
