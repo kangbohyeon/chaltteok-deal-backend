@@ -7,4 +7,5 @@ interface ProductRepository : JpaRepository<Product, Long>, ProductRepositoryCus
     fun findAllByIsActiveTrue(): List<Product>
     fun findAllByIsActiveTrueAndIsRecommendedTrue(): List<Product>
     fun findByProductUuid(productUuid: String): Product?
+    fun findAllByStockQuantityIsNotNull(): List<Product>
 }

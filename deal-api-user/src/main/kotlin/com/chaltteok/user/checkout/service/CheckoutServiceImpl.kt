@@ -39,6 +39,11 @@ class CheckoutServiceImpl(
         val orderItems = request.items.map { item ->
             val product = productRepository.findById(item.productId)
                 .orElseThrow { BusinessException(CheckoutErrorCode.PRODUCT_NOT_FOUND) }
+            if (product.currentStock != null) {
+                val remaining = (product.currentStock!! - item.quantity).coerceAtLeast(0)
+                product.currentStock = remaining
+                if (remaining == 0) product.isSoldOut = true
+            }
             OrderItem(order = savedOrder, product = product, quantity = item.quantity, price = item.price.toInt())
         }
         orderItemRepository.saveAll(orderItems)

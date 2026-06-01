@@ -10,6 +10,8 @@ class ProductWithOptionRow(
     val isActive: Boolean,
     val isSoldOut: Boolean,
     val isRecommended: Boolean,
+    val stockQuantity: Int?,
+    val currentStock: Int?,
     val optionUuid: String,
     val optionPrice: Int,
 )
