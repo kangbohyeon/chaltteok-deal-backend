@@ -1,6 +1,8 @@
 package com.chaltteok.user.product.service
 
+import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.comment.CommentRepository
+import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.domain.Product
 import com.chaltteok.user.product.dto.ProductResponse
@@ -13,11 +15,12 @@ import org.springframework.web.server.ResponseStatusException
 class ProductQueryServiceImpl(
     private val productRepository: ProductRepository,
     private val commentRepository: CommentRepository,
+    private val orderItemRepository: OrderItemRepository,
 ) : ProductQueryService {
 
     @Transactional(readOnly = true)
     override fun getProducts(): List<ProductResponse> {
-        val products = productRepository.findAllByIsActiveTrue()
+        val products = productRepository.findAllByIsActiveTrueOrderByDisplayOrderAscNameAsc()
         return buildResponses(products)
     }
 
@@ -52,8 +55,10 @@ class ProductQueryServiceImpl(
             .associate { it.productId to it.cnt.toInt() }
         val ratingMap = commentRepository.avgRatingByProductIds(ids)
             .associate { it.productId to it.avg }
+        val salesMap = orderItemRepository.sumQuantityByProductIds(ids, OrderStatus.COMPLETED)
+            .associate { it.productId to it.totalQty }
         return products.map {
-            ProductResponse.from(it, countMap[it.id!!] ?: 0, ratingMap[it.id!!])
+            ProductResponse.from(it, countMap[it.id!!] ?: 0, ratingMap[it.id!!], salesMap[it.id!!] ?: 0L)
         }
     }
 }

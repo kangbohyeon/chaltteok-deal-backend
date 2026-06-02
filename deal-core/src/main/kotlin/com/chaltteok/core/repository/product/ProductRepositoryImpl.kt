@@ -29,13 +29,14 @@ class ProductRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Prod
                     qProduct.isRecommended,
                     qProduct.stockQuantity,
                     qProduct.currentStock,
+                    qProduct.displayOrder,
                     qOption.optionUuid,
                     qOption.price,
                 )
             )
             .from(qProduct)
             .join(qOption).on(qOption.product.id.eq(qProduct.id))
-            .orderBy(qProduct.id.desc())
+            .orderBy(qProduct.displayOrder.asc(), qProduct.id.asc())
             .fetch()
     }
 

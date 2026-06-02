@@ -3,6 +3,7 @@ package com.chaltteok.owner.product.dto
 import com.chaltteok.core.domain.Product
 import com.chaltteok.core.domain.ProductOption
 import com.chaltteok.owner.product.enums.StockType
+import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 
@@ -20,6 +21,9 @@ class ProductRegisterRequest(
     val isRecommended: Boolean = false,
     @field:Min(value = 0, message = "stock quantity must be 0 or more")
     val stockQuantity: Int? = null,
+    @field:Min(value = 0, message = "display order must be 0 or more")
+    @field:Max(value = 9999, message = "display order must be 9999 or less")
+    val displayOrder: Int = 0,
 ) {
     fun toProduct(imageUrl: String?): Product {
         val soldOut = isSoldOut || stockQuantity == 0
@@ -33,6 +37,7 @@ class ProductRegisterRequest(
             isRecommended = isRecommended,
             stockQuantity = stockQuantity,
             currentStock = stockQuantity,
+            displayOrder = displayOrder,
         )
     }
 

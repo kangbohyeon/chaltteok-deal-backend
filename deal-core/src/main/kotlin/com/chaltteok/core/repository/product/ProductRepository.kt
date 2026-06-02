@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param
 
 interface ProductRepository : JpaRepository<Product, Long>, ProductRepositoryCustom {
     fun findAllByIsActiveTrue(): List<Product>
+    fun findAllByIsActiveTrueOrderByDisplayOrderAscNameAsc(): List<Product>
     fun findAllByIsActiveTrueAndIsRecommendedTrue(): List<Product>
     fun findByProductUuid(productUuid: String): Product?
 

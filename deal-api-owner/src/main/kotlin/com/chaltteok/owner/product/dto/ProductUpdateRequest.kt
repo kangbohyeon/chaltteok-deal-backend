@@ -1,5 +1,6 @@
 package com.chaltteok.owner.product.dto
 
+import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 
@@ -19,4 +20,7 @@ class ProductUpdateRequest(
     val stockQuantity: Int? = null,
     @field:Min(value = 0, message = "current stock must be 0 or more")
     val currentStock: Int? = null,
+    @field:Min(value = 0, message = "display order must be 0 or more")
+    @field:Max(value = 9999, message = "display order must be 9999 or less")
+    val displayOrder: Int? = null,
 )
