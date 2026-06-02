@@ -51,7 +51,7 @@ class ProductServiceImpl(
         product.isRecommended = request.isRecommended
         if (newImageUrl != null) product.imageUrl = newImageUrl
 
-        product.displayOrder = request.displayOrder
+        if (request.displayOrder != null) product.displayOrder = request.displayOrder
 
         val effectiveStockQuantity = request.stockQuantity ?: product.stockQuantity
         if (request.currentStock != null && effectiveStockQuantity != null
