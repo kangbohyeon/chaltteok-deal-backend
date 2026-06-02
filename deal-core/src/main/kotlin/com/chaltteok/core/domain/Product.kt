@@ -38,6 +38,9 @@ class Product(
     @Column(name = "current_stock")
     var currentStock: Int? = null,
 
+    @Column(name = "display_order", nullable = false)
+    var displayOrder: Int = 0,
+
 ) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

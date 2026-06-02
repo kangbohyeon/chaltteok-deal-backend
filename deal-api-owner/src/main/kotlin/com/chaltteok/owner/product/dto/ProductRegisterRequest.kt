@@ -20,6 +20,7 @@ class ProductRegisterRequest(
     val isRecommended: Boolean = false,
     @field:Min(value = 0, message = "stock quantity must be 0 or more")
     val stockQuantity: Int? = null,
+    val displayOrder: Int = 0,
 ) {
     fun toProduct(imageUrl: String?): Product {
         val soldOut = isSoldOut || stockQuantity == 0
@@ -33,6 +34,7 @@ class ProductRegisterRequest(
             isRecommended = isRecommended,
             stockQuantity = stockQuantity,
             currentStock = stockQuantity,
+            displayOrder = displayOrder,
         )
     }
 

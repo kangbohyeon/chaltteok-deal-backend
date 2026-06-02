@@ -19,4 +19,5 @@ class ProductUpdateRequest(
     val stockQuantity: Int? = null,
     @field:Min(value = 0, message = "current stock must be 0 or more")
     val currentStock: Int? = null,
+    val displayOrder: Int = 0,
 )

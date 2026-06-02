@@ -12,6 +12,7 @@ class ProductWithOptionRow(
     val isRecommended: Boolean,
     val stockQuantity: Int?,
     val currentStock: Int?,
+    val displayOrder: Int,
     val optionUuid: String,
     val optionPrice: Int,
 )
