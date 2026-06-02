@@ -48,14 +48,28 @@ class ProductServiceImpl(
         product.description = request.descp
         product.price = request.price
         product.isActive = request.isActive
-        product.isSoldOut = request.isSoldOut || request.stockQuantity == 0
         product.isRecommended = request.isRecommended
         if (newImageUrl != null) product.imageUrl = newImageUrl
+
+        // stockQuantity 처리: 값이 변경된 경우에만 currentStock 리셋 (currentStock 미지정 시)
         if (request.stockQuantity != null && request.stockQuantity != product.stockQuantity) {
             product.stockQuantity = request.stockQuantity
-            product.currentStock = request.stockQuantity
-        } else if (request.stockQuantity != null) {
-            product.stockQuantity = request.stockQuantity
+            if (request.currentStock == null) {
+                product.currentStock = request.stockQuantity
+            }
+        }
+
+        // currentStock 직접 수정 처리
+        if (request.currentStock != null) {
+            val prevStock = product.currentStock ?: 0
+            product.currentStock = request.currentStock
+            product.isSoldOut = when {
+                request.currentStock > 0 && prevStock == 0 -> false   // 0 → 양수: 품절 자동 해제
+                request.currentStock == 0 -> true                      // 0: 품절 처리
+                else -> request.isSoldOut || request.stockQuantity == 0
+            }
+        } else {
+            product.isSoldOut = request.isSoldOut || request.stockQuantity == 0
         }
     }
 
