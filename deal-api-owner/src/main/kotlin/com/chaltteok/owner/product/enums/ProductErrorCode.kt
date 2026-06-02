@@ -11,4 +11,5 @@ enum class ProductErrorCode(
     FILE_EMPTY("File is empty", HttpStatus.BAD_REQUEST),
     INVALID_FILE_TYPE("This is an unsupported file type", HttpStatus.BAD_REQUEST),
     FILE_UPLOAD_ERROR("Error uploading file", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_STOCK("현재 잔고는 일별 재고 수량을 초과할 수 없습니다.", HttpStatus.BAD_REQUEST),
 }

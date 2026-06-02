@@ -17,4 +17,6 @@ class ProductUpdateRequest(
     val isRecommended: Boolean = false,
     @field:Min(value = 0, message = "stock quantity must be 0 or more")
     val stockQuantity: Int? = null,
+    @field:Min(value = 0, message = "current stock must be 0 or more")
+    val currentStock: Int? = null,
 )

@@ -48,15 +48,34 @@ class ProductServiceImpl(
         product.description = request.descp
         product.price = request.price
         product.isActive = request.isActive
-        product.isSoldOut = request.isSoldOut || request.stockQuantity == 0
         product.isRecommended = request.isRecommended
         if (newImageUrl != null) product.imageUrl = newImageUrl
+
+        val effectiveStockQuantity = request.stockQuantity ?: product.stockQuantity
+        if (request.currentStock != null && effectiveStockQuantity != null
+            && request.currentStock > effectiveStockQuantity
+        ) {
+            throw BusinessException(ProductErrorCode.INVALID_STOCK)
+        }
+
         if (request.stockQuantity != null && request.stockQuantity != product.stockQuantity) {
             product.stockQuantity = request.stockQuantity
-            product.currentStock = request.stockQuantity
-        } else if (request.stockQuantity != null) {
-            product.stockQuantity = request.stockQuantity
+            if (request.currentStock == null) {
+                product.currentStock = request.stockQuantity
+            }
         }
+
+        val prevStock = product.currentStock ?: 0
+        if (request.currentStock != null) {
+            product.currentStock = request.currentStock
+        }
+        product.isSoldOut = resolveSoldOut(request, prevStock)
+    }
+
+    private fun resolveSoldOut(request: ProductUpdateRequest, prevStock: Int): Boolean = when {
+        request.currentStock != null && request.currentStock > 0 && prevStock == 0 -> false
+        request.currentStock != null && request.currentStock == 0 -> true
+        else -> request.isSoldOut || request.stockQuantity == 0
     }
 
     @Transactional
