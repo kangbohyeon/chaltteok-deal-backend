@@ -28,12 +28,7 @@ class ProductQueryServiceImpl(
     override fun getProductByUuid(productUuid: String): ProductResponse {
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: $productUuid")
-        val id = product.id!!
-        val commentCount = commentRepository.countRootCommentsByProductIds(listOf(id))
-            .firstOrNull()?.cnt?.toInt() ?: 0
-        val averageRating = commentRepository.avgRatingByProductIds(listOf(id))
-            .firstOrNull()?.avg
-        return ProductResponse.from(product, commentCount, averageRating)
+        return buildResponses(listOf(product)).first()
     }
 
     @Transactional(readOnly = true)

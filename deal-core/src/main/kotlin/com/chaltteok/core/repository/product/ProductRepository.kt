@@ -18,6 +18,10 @@ interface ProductRepository : JpaRepository<Product, Long>, ProductRepositoryCus
     @Query("SELECT p FROM Product p WHERE p.id IN :ids")
     fun findAllByIdInWithLock(@Param("ids") ids: Collection<Long>): List<Product>
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.productUuid IN :uuids")
+    fun findAllByProductUuidInWithLock(@Param("uuids") uuids: Collection<String>): List<Product>
+
     @Modifying
     @Query("UPDATE Product p SET p.currentStock = p.stockQuantity, p.isSoldOut = false WHERE p.stockQuantity IS NOT NULL AND p.stockQuantity > 0")
     fun resetDailyStockForActiveProducts(): Int
