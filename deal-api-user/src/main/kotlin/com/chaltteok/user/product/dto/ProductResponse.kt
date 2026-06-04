@@ -3,7 +3,6 @@ package com.chaltteok.user.product.dto
 import com.chaltteok.core.domain.Product
 
 data class ProductResponse(
-    val id: Long,
     val productUuid: String,
     val name: String,
     val price: Long,
@@ -17,7 +16,6 @@ data class ProductResponse(
 ) {
     companion object {
         fun from(product: Product, commentCount: Int = 0, averageRating: Double? = null, salesCount: Long = 0) = ProductResponse(
-            id = product.id!!,
             productUuid = product.productUuid,
             name = product.name,
             price = product.price.toLong(),

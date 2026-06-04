@@ -1,6 +1,7 @@
 package com.chaltteok.owner.product.dto
 
 import com.chaltteok.core.domain.Product
+import com.chaltteok.core.domain.ProductConstants
 import com.chaltteok.core.domain.ProductOption
 import com.chaltteok.owner.product.enums.StockType
 import jakarta.validation.constraints.Max
@@ -22,7 +23,7 @@ class ProductRegisterRequest(
     @field:Min(value = 0, message = "stock quantity must be 0 or more")
     val stockQuantity: Int? = null,
     @field:Min(value = 0, message = "display order must be 0 or more")
-    @field:Max(value = 9999, message = "display order must be 9999 or less")
+    @field:Max(value = ProductConstants.DISPLAY_ORDER_MAX, message = "display order must be ${ProductConstants.DISPLAY_ORDER_MAX} or less")
     val displayOrder: Int = 0,
 ) {
     fun toProduct(imageUrl: String?): Product {
