@@ -1,6 +1,8 @@
 package com.chaltteok.owner.inquiry.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.domain.enums.AttachmentType
+import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.core.repository.inquiry.InquiryRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.owner.inquiry.dto.AnswerRequest
@@ -17,6 +19,7 @@ import java.time.LocalDateTime
 class OwnerInquiryServiceImpl(
     private val inquiryRepository: InquiryRepository,
     private val userRepository: UserRepository,
+    private val attachmentRepository: AttachmentRepository,
 ) : OwnerInquiryService {
 
     @Transactional(readOnly = true)
@@ -27,8 +30,16 @@ class OwnerInquiryServiceImpl(
         val userIds = inquiryPage.content.map { it.userId }.distinct()
         val uuidMap = userRepository.findAllById(userIds).associate { it.id!! to it.userUuid }
 
+        val inquiryUuids = inquiryPage.content.map { it.inquiryUuid }
+        val attachmentMap = if (inquiryUuids.isNotEmpty()) {
+            attachmentRepository.findAllByReferenceUuidInAndAttachmentType(inquiryUuids, AttachmentType.INQUIRY.name)
+                .groupBy { it.referenceUuid!! }
+        } else emptyMap()
+
         return OwnerInquiryPageResponse(
-            content = inquiryPage.content.map { OwnerInquiryResponse.from(it, uuidMap[it.userId] ?: "") },
+            content = inquiryPage.content.map {
+                OwnerInquiryResponse.from(it, uuidMap[it.userId] ?: "", attachmentMap[it.inquiryUuid].orEmpty())
+            },
             totalElements = inquiryPage.totalElements,
             totalPages = inquiryPage.totalPages,
             currentPage = page,
