@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
 class NotificationResponse(
-    val id: Long,
     val notificationUuid: String,
     val type: String,
     val title: String,
@@ -15,7 +14,6 @@ class NotificationResponse(
 ) {
     companion object {
         fun from(notification: Notification) = NotificationResponse(
-            id = notification.id!!,
             notificationUuid = notification.notificationUuid,
             type = notification.type,
             title = notification.title,

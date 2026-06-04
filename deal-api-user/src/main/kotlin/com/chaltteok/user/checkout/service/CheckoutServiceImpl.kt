@@ -3,6 +3,7 @@ package com.chaltteok.user.checkout.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
+import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.Payment
@@ -63,11 +64,12 @@ class CheckoutServiceImpl(
         savedOrder.status = OrderStatus.COMPLETED
 
         val productNames = orderItems.joinToString(", ") { it.product.name }
+            .let { if (it.length > 450) it.take(450) + "…" else it }
         notificationRepository.save(
             Notification(
-                type = "ORDER",
+                type = NotificationType.ORDER.name,
                 title = "새 주문이 들어왔습니다",
-                message = "%s (%,d원)".format(productNames, request.totalAmount),
+                message = "$productNames (%,d원)".format(request.totalAmount),
             )
         )
 

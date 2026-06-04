@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
 interface NotificationRepository : JpaRepository<Notification, Long> {
-    fun findAllByOrderByCreatedAtDesc(): List<Notification>
+    fun findTop50ByOrderByCreatedAtDesc(): List<Notification>
     fun countByIsReadFalse(): Long
 
     @Modifying

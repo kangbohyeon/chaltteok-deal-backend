@@ -13,7 +13,7 @@ class NotificationServiceImpl(
 
     @Transactional(readOnly = true)
     override fun getNotifications(): NotificationListResponse {
-        val notifications = notificationRepository.findAllByOrderByCreatedAtDesc()
+        val notifications = notificationRepository.findTop50ByOrderByCreatedAtDesc()
             .map { NotificationResponse.from(it) }
         val unreadCount = notificationRepository.countByIsReadFalse()
         return NotificationListResponse(
