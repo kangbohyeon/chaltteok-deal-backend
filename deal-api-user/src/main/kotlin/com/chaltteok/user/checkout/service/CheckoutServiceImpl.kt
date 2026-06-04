@@ -1,11 +1,13 @@
 package com.chaltteok.user.checkout.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.enums.PaymentStatus
+import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -24,6 +26,7 @@ class CheckoutServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
+    private val notificationRepository: NotificationRepository,
 ) : CheckoutService {
 
     @Transactional
@@ -58,6 +61,15 @@ class CheckoutServiceImpl(
         paymentRepository.save(payment)
 
         savedOrder.status = OrderStatus.COMPLETED
+
+        val productNames = orderItems.joinToString(", ") { it.product.name }
+        notificationRepository.save(
+            Notification(
+                type = "ORDER",
+                title = "새 주문이 들어왔습니다",
+                message = "%s (%,d원)".format(productNames, request.totalAmount),
+            )
+        )
 
         return CheckoutResponse(
             orderId = savedOrder.id!!,
