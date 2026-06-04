@@ -1,11 +1,13 @@
 package com.chaltteok.user.product.service
 
+import com.chaltteok.core.cache.CacheNames
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.domain.Product
 import com.chaltteok.user.product.dto.ProductResponse
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,12 +20,14 @@ class ProductQueryServiceImpl(
     private val orderItemRepository: OrderItemRepository,
 ) : ProductQueryService {
 
+    @Cacheable(CacheNames.PRODUCT_LIST)
     @Transactional(readOnly = true)
     override fun getProducts(): List<ProductResponse> {
         val products = productRepository.findAllActiveByDisplayOrder()
         return buildResponses(products)
     }
 
+    @Cacheable(value = [CacheNames.PRODUCT], key = "#productUuid")
     @Transactional(readOnly = true)
     override fun getProductByUuid(productUuid: String): ProductResponse {
         val product = productRepository.findByProductUuid(productUuid)
@@ -31,6 +35,7 @@ class ProductQueryServiceImpl(
         return buildResponses(listOf(product)).first()
     }
 
+    @Cacheable(CacheNames.PRODUCT_RECOMMENDED)
     @Transactional(readOnly = true)
     override fun getRecommendedProducts(): List<ProductResponse> {
         val products = productRepository.findAllByIsActiveTrueAndIsRecommendedTrue()

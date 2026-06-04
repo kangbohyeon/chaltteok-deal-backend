@@ -1,6 +1,7 @@
 package com.chaltteok.owner.product.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.cache.CacheNames
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
 import com.chaltteok.owner.product.dto.ProductListResponse
@@ -9,6 +10,8 @@ import com.chaltteok.owner.product.dto.ProductUpdateRequest
 import com.chaltteok.owner.product.enums.ProductErrorCode
 import com.chaltteok.owner.product.util.LocalFileUploader
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Caching
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -26,6 +29,10 @@ class ProductServiceImpl(
     override fun getProducts(): List<ProductListResponse> =
         productRepository.findAllWithOption().map { ProductListResponse.from(it) }
 
+    @Caching(evict = [
+        CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT_RECOMMENDED], allEntries = true),
+    ])
     @Transactional
     override fun registerProduct(request: ProductRegisterRequest, image: MultipartFile?) {
         val imageUrl = image?.takeIf { !it.isEmpty }?.let { fileUploader.uploadFile(it) }
@@ -35,6 +42,11 @@ class ProductServiceImpl(
         logger.info { "product registered: ${request.name}" }
     }
 
+    @Caching(evict = [
+        CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT_RECOMMENDED], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT], key = "#productUuid"),
+    ])
     @Transactional
     override fun updateProduct(productUuid: String, request: ProductUpdateRequest, image: MultipartFile?) {
         val product = productRepository.findByProductUuid(productUuid)
@@ -79,6 +91,11 @@ class ProductServiceImpl(
         else -> request.isSoldOut || request.stockQuantity == 0
     }
 
+    @Caching(evict = [
+        CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT_RECOMMENDED], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT], key = "#productUuid"),
+    ])
     @Transactional
     override fun deleteProduct(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
@@ -91,6 +108,11 @@ class ProductServiceImpl(
         logger.info { "product deleted: $productUuid" }
     }
 
+    @Caching(evict = [
+        CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT_RECOMMENDED], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT], key = "#productUuid"),
+    ])
     @Transactional
     override fun toggleActive(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
@@ -98,6 +120,10 @@ class ProductServiceImpl(
         product.isActive = !product.isActive
     }
 
+    @Caching(evict = [
+        CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT], key = "#productUuid"),
+    ])
     @Transactional
     override fun toggleSoldOut(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
@@ -105,6 +131,11 @@ class ProductServiceImpl(
         product.isSoldOut = !product.isSoldOut
     }
 
+    @Caching(evict = [
+        CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT_RECOMMENDED], allEntries = true),
+        CacheEvict(value = [CacheNames.PRODUCT], key = "#productUuid"),
+    ])
     @Transactional
     override fun toggleRecommend(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
