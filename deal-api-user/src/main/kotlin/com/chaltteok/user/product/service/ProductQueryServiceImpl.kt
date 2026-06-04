@@ -20,7 +20,7 @@ class ProductQueryServiceImpl(
 
     @Transactional(readOnly = true)
     override fun getProducts(): List<ProductResponse> {
-        val products = productRepository.findAllByIsActiveTrueOrderByDisplayOrderAscNameAsc()
+        val products = productRepository.findAllActiveByDisplayOrder()
         return buildResponses(products)
     }
 
@@ -52,8 +52,9 @@ class ProductQueryServiceImpl(
             .associate { it.productId to it.avg }
         val salesMap = orderItemRepository.sumQuantityByProductIds(ids, OrderStatus.COMPLETED)
             .associate { it.productId to it.totalQty }
-        return products.map {
-            ProductResponse.from(it, countMap[it.id!!] ?: 0, ratingMap[it.id!!], salesMap[it.id!!] ?: 0L)
+        return products.mapNotNull { product ->
+            val id = product.id ?: return@mapNotNull null
+            ProductResponse.from(product, countMap[id] ?: 0, ratingMap[id], salesMap[id] ?: 0L)
         }
     }
 }
