@@ -36,12 +36,12 @@ class CheckoutServiceImpl(
         val order = Order(user = user, totalPrice = request.totalAmount.toInt(), status = OrderStatus.PENDING)
         val savedOrder = orderRepository.save(order)
 
-        val productIds = request.items.map { it.productId }
-        val productMap = productRepository.findAllByIdInWithLock(productIds)
-            .associateBy { it.id!! }
+        val productUuids = request.items.map { it.productUuid }
+        val productMap = productRepository.findAllByProductUuidInWithLock(productUuids)
+            .associateBy { it.productUuid }
 
         val orderItems = request.items.map { item ->
-            val product = productMap[item.productId]
+            val product = productMap[item.productUuid]
                 ?: throw BusinessException(CheckoutErrorCode.PRODUCT_NOT_FOUND)
             if (product.currentStock != null) {
                 if (product.currentStock!! < item.quantity) {
