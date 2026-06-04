@@ -1,9 +1,11 @@
 package com.chaltteok.user.inquiry.service
 
+import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Inquiry
 import com.chaltteok.core.domain.enums.AttachmentType
 import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.core.repository.inquiry.InquiryRepository
+import com.chaltteok.user.file.enums.FileErrorCode
 import com.chaltteok.user.inquiry.dto.InquiryRequest
 import com.chaltteok.user.inquiry.dto.InquiryResponse
 import org.springframework.stereotype.Service
@@ -36,11 +38,14 @@ class UserInquiryServiceImpl(
             )
         )
         if (request.attachmentUuids.isNotEmpty()) {
-            attachmentRepository.updateReferenceByUuids(
+            val updated = attachmentRepository.updateReferenceByUuids(
                 request.attachmentUuids,
                 inquiry.inquiryUuid,
                 AttachmentType.INQUIRY.name
             )
+            if (updated != request.attachmentUuids.size) {
+                throw BusinessException(FileErrorCode.ATTACHMENT_OWNERSHIP_VIOLATION)
+            }
         }
         return InquiryResponse.from(inquiry)
     }

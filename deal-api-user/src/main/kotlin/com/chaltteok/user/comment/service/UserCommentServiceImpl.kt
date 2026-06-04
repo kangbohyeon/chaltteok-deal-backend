@@ -12,6 +12,7 @@ import com.chaltteok.user.comment.dto.CommentRequest
 import com.chaltteok.user.comment.dto.CommentResponse
 import com.chaltteok.user.comment.dto.ReplyRequest
 import com.chaltteok.user.comment.enums.CommentErrorCode
+import com.chaltteok.user.file.enums.FileErrorCode
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -61,11 +62,14 @@ class UserCommentServiceImpl(
             )
         )
         if (request.attachmentUuids.isNotEmpty()) {
-            attachmentRepository.updateReferenceByUuids(
+            val updated = attachmentRepository.updateReferenceByUuids(
                 request.attachmentUuids,
                 comment.commentUuid,
                 AttachmentType.COMMENT.name
             )
+            if (updated != request.attachmentUuids.size) {
+                throw BusinessException(FileErrorCode.ATTACHMENT_OWNERSHIP_VIOLATION)
+            }
         }
         val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
         return CommentResponse.from(comment, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())
@@ -96,11 +100,14 @@ class UserCommentServiceImpl(
         comment.rating = request.rating
         comment.isSecret = request.isSecret
         if (request.attachmentUuids.isNotEmpty()) {
-            attachmentRepository.updateReferenceByUuids(
+            val updated = attachmentRepository.updateReferenceByUuids(
                 request.attachmentUuids,
                 comment.commentUuid,
                 AttachmentType.COMMENT.name
             )
+            if (updated != request.attachmentUuids.size) {
+                throw BusinessException(FileErrorCode.ATTACHMENT_OWNERSHIP_VIOLATION)
+            }
         }
         val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
         return CommentResponse.from(comment, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())

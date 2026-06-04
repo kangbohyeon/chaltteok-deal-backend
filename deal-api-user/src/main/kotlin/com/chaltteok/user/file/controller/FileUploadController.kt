@@ -1,33 +1,25 @@
 package com.chaltteok.user.file.controller
 
 import com.chaltteok.common.dto.ResponseDTO
-import com.chaltteok.core.domain.Attachment
-import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.user.file.dto.FileUploadResponse
-import com.chaltteok.user.file.util.LocalFileUploader
+import com.chaltteok.user.file.service.FileUploadService
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/v1/user/files")
 class FileUploadController(
-    private val localFileUploader: LocalFileUploader,
-    private val attachmentRepository: AttachmentRepository,
+    private val fileUploadService: FileUploadService,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun upload(@RequestParam("file") file: MultipartFile): ResponseDTO<FileUploadResponse> {
-        val (fileUrl, originalFilename) = localFileUploader.upload(file)
-        val attachment = attachmentRepository.save(
-            Attachment(fileUrl = fileUrl, originalFilename = originalFilename)
-        )
-        return ResponseDTO.success(
-            FileUploadResponse(
-                attachmentUuid = attachment.attachmentUuid,
-                fileUrl = fileUrl,
-                originalFilename = originalFilename,
-            )
-        )
+    fun upload(
+        authentication: Authentication,
+        @RequestParam("file") file: MultipartFile,
+    ): ResponseDTO<FileUploadResponse> {
+        authentication.principal as Long  // 인증 강제 (미인증 시 401)
+        return ResponseDTO.success(fileUploadService.upload(file))
     }
 }
