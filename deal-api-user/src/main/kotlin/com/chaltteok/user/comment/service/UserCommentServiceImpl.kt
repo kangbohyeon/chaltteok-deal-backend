@@ -2,6 +2,8 @@ package com.chaltteok.user.comment.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Comment
+import com.chaltteok.core.domain.enums.AttachmentType
+import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.user.UserRepository
@@ -20,6 +22,7 @@ class UserCommentServiceImpl(
     private val commentRepository: CommentRepository,
     private val productRepository: ProductRepository,
     private val userRepository: UserRepository,
+    private val attachmentRepository: AttachmentRepository,
 ) : UserCommentService {
 
     @Transactional(readOnly = true)
@@ -32,9 +35,14 @@ class UserCommentServiceImpl(
         val allComments = roots + replies
         val userIds = allComments.filter { !it.isOwnerReply }.map { it.userId }.distinct()
         val nicknameMap = userRepository.findAllById(userIds).associate { it.id!! to it.nickname }
+        val allUuids = allComments.map { it.commentUuid }
+        val attachmentMap = if (allUuids.isNotEmpty()) {
+            attachmentRepository.findAllByReferenceUuidInAndAttachmentType(allUuids, AttachmentType.COMMENT.name)
+                .groupBy { it.referenceUuid!! }
+        } else emptyMap()
         val replyMap = replies.groupBy { it.parentId }
         val content = roots.map { root ->
-            CommentResponse.from(root, replyMap[root.id] ?: emptyList(), requestingUserId, nicknameMap)
+            CommentResponse.from(root, replyMap[root.id] ?: emptyList(), requestingUserId, nicknameMap, attachmentMap)
         }
         return CommentPageResponse(content, rootPage.totalElements, rootPage.totalPages, page, size)
     }
@@ -52,6 +60,13 @@ class UserCommentServiceImpl(
                 isSecret = request.isSecret,
             )
         )
+        if (request.attachmentUuids.isNotEmpty()) {
+            attachmentRepository.updateReferenceByUuids(
+                request.attachmentUuids,
+                comment.commentUuid,
+                AttachmentType.COMMENT.name
+            )
+        }
         val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
         return CommentResponse.from(comment, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())
     }
@@ -80,6 +95,13 @@ class UserCommentServiceImpl(
         comment.content = request.content
         comment.rating = request.rating
         comment.isSecret = request.isSecret
+        if (request.attachmentUuids.isNotEmpty()) {
+            attachmentRepository.updateReferenceByUuids(
+                request.attachmentUuids,
+                comment.commentUuid,
+                AttachmentType.COMMENT.name
+            )
+        }
         val nickname = userRepository.findById(userId).map { it.nickname }.orElse(null)
         return CommentResponse.from(comment, emptyList(), userId, if (nickname != null) mapOf(userId to nickname) else emptyMap())
     }

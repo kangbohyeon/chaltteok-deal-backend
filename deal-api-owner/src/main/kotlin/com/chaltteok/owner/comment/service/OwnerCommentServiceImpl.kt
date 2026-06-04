@@ -2,6 +2,8 @@ package com.chaltteok.owner.comment.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Comment
+import com.chaltteok.core.domain.enums.AttachmentType
+import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.owner.comment.dto.OwnerCommentPageResponse
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional
 class OwnerCommentServiceImpl(
     private val commentRepository: CommentRepository,
     private val userRepository: UserRepository,
+    private val attachmentRepository: AttachmentRepository,
 ) : OwnerCommentService {
 
     @Transactional(readOnly = true)
@@ -34,9 +37,15 @@ class OwnerCommentServiceImpl(
             .distinct()
         val uuidMap = userRepository.findAllById(userIds).associate { it.id!! to it.userUuid }
 
+        val allUuids = (roots + replies).map { it.commentUuid }
+        val attachmentMap = if (allUuids.isNotEmpty()) {
+            attachmentRepository.findAllByReferenceUuidInAndAttachmentType(allUuids, AttachmentType.COMMENT.name)
+                .groupBy { it.referenceUuid!! }
+        } else emptyMap()
+
         val replyMap = replies.groupBy { it.parentId }
         val content = roots.map { root ->
-            OwnerCommentResponse.fromWithReplies(root, replyMap[root.id] ?: emptyList(), uuidMap)
+            OwnerCommentResponse.fromWithReplies(root, replyMap[root.id] ?: emptyList(), uuidMap, attachmentMap)
         }
         return OwnerCommentPageResponse(content, rootPage.totalElements, rootPage.totalPages, page, size)
     }

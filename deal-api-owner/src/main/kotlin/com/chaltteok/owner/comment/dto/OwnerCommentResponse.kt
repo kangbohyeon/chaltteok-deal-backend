@@ -1,5 +1,6 @@
 package com.chaltteok.owner.comment.dto
 
+import com.chaltteok.core.domain.Attachment
 import com.chaltteok.core.domain.Comment
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
@@ -17,9 +18,14 @@ class OwnerCommentResponse(
     val parentId: Long?,
     val replies: List<OwnerCommentResponse>,
     val createdAt: LocalDateTime,
+    val attachments: List<AttachmentInfo> = emptyList(),
 ) {
     companion object {
-        fun from(comment: Comment, userUuid: String = "") = OwnerCommentResponse(
+        fun from(
+            comment: Comment,
+            userUuid: String = "",
+            attachmentMap: Map<String, List<Attachment>> = emptyMap(),
+        ) = OwnerCommentResponse(
             commentId = comment.id!!,
             commentUuid = comment.commentUuid,
             productUuid = comment.product.productUuid,
@@ -32,12 +38,16 @@ class OwnerCommentResponse(
             parentId = comment.parentId,
             replies = emptyList(),
             createdAt = comment.createdAt,
+            attachments = attachmentMap[comment.commentUuid].orEmpty().map {
+                AttachmentInfo(it.attachmentUuid, it.fileUrl, it.originalFilename)
+            },
         )
 
         fun fromWithReplies(
             comment: Comment,
             replies: List<Comment>,
             uuidMap: Map<Long, String>,
+            attachmentMap: Map<String, List<Attachment>> = emptyMap(),
         ) = OwnerCommentResponse(
             commentId = comment.id!!,
             commentUuid = comment.commentUuid,
@@ -49,8 +59,13 @@ class OwnerCommentResponse(
             isSecret = comment.isSecret,
             isOwnerReply = comment.isOwnerReply,
             parentId = comment.parentId,
-            replies = replies.map { from(it, if (it.isOwnerReply) "" else uuidMap[it.userId] ?: "") },
+            replies = replies.map {
+                from(it, if (it.isOwnerReply) "" else uuidMap[it.userId] ?: "", attachmentMap)
+            },
             createdAt = comment.createdAt,
+            attachments = attachmentMap[comment.commentUuid].orEmpty().map {
+                AttachmentInfo(it.attachmentUuid, it.fileUrl, it.originalFilename)
+            },
         )
     }
 }
