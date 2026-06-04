@@ -25,7 +25,7 @@ class CacheConfig {
                 .allowIfBaseType(Any::class.java)
                 .build(),
             ObjectMapper.DefaultTyping.NON_FINAL,
-            JsonTypeInfo.As.PROPERTY,
+            JsonTypeInfo.As.WRAPPER_ARRAY,
         )
         val serializer = GenericJackson2JsonRedisSerializer(cacheMapper)
         val valuePair = RedisSerializationContext.SerializationPair.fromSerializer(serializer)
