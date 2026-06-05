@@ -24,18 +24,28 @@ class DashboardServiceImpl(
     private val userRepository: UserRepository,
 ) : DashboardService {
 
-    override fun getOverview(period: DashboardPeriod): DashboardOverviewResponse {
-        val (from, to) = resolvePeriodRange(period)
+    override fun getOverview(period: DashboardPeriod, from: LocalDate?, to: LocalDate?): DashboardOverviewResponse {
+        if (from != null && to != null) {
+            require(!from.isAfter(to)) { "시작일은 종료일보다 이전이어야 합니다." }
+            require(!to.isAfter(LocalDate.now())) { "종료일은 오늘 이전이어야 합니다." }
+            require(!from.isBefore(to.minusDays(365))) { "조회 기간은 최대 365일입니다." }
+        }
 
-        val salesAgg = orderRepository.findSalesPeriodAgg(from, to)
-        val newCustomers = userRepository.countNewUsers(from, to)
-        val repeatCustomers = userRepository.countRepeatOrderUsers(from, to)
+        val (fromDt, toDt) = if (from != null && to != null) {
+            Pair(from.atStartOfDay(), to.atTime(LocalTime.MAX))
+        } else {
+            resolvePeriodRange(period)
+        }
+
+        val salesAgg = orderRepository.findSalesPeriodAgg(fromDt, toDt)
+        val newCustomers = userRepository.countNewUsers(fromDt, toDt)
+        val repeatCustomers = userRepository.countRepeatOrderUsers(fromDt, toDt)
         val avgOrderValue = if (salesAgg.orderCount > 0) salesAgg.totalRevenue / salesAgg.orderCount else 0L
 
         return DashboardOverviewResponse(
             period = period.name,
-            from = from,
-            to = to,
+            from = fromDt,
+            to = toDt,
             totalRevenue = salesAgg.totalRevenue,
             orderCount = salesAgg.orderCount,
             avgOrderValue = avgOrderValue,
