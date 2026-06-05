@@ -25,6 +25,12 @@ class DashboardServiceImpl(
 ) : DashboardService {
 
     override fun getOverview(period: DashboardPeriod, from: LocalDate?, to: LocalDate?): DashboardOverviewResponse {
+        if (from != null && to != null) {
+            require(!from.isAfter(to)) { "시작일은 종료일보다 이전이어야 합니다." }
+            require(!to.isAfter(LocalDate.now())) { "종료일은 오늘 이전이어야 합니다." }
+            require(!from.isBefore(to.minusDays(365))) { "조회 기간은 최대 365일입니다." }
+        }
+
         val (fromDt, toDt) = if (from != null && to != null) {
             Pair(from.atStartOfDay(), to.atTime(LocalTime.MAX))
         } else {
