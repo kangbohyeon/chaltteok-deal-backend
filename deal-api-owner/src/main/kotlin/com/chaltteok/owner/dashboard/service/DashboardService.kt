@@ -8,7 +8,7 @@ import com.chaltteok.owner.dashboard.enums.DashboardPeriod
 import java.time.LocalDate
 
 interface DashboardService {
-    fun getOverview(period: DashboardPeriod): DashboardOverviewResponse
+    fun getOverview(period: DashboardPeriod, from: LocalDate? = null, to: LocalDate? = null): DashboardOverviewResponse
     fun getSalesTrend(from: LocalDate, to: LocalDate): SalesTrendResponse
     fun getTopProducts(from: LocalDate, to: LocalDate, limit: Int): TopProductsResponse
     fun getHourlySales(date: LocalDate): HourlySalesResponse

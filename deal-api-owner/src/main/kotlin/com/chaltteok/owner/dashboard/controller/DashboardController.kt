@@ -17,7 +17,9 @@ class DashboardController(private val dashboardService: DashboardService) {
     @GetMapping("/overview")
     fun getOverview(
         @RequestParam(defaultValue = "DAILY") period: DashboardPeriod,
-    ) = ResponseDTO.success(dashboardService.getOverview(period))
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate?,
+    ) = ResponseDTO.success(dashboardService.getOverview(period, from, to))
 
     @GetMapping("/sales-trend")
     fun getSalesTrend(
