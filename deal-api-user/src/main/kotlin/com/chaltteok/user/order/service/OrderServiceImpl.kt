@@ -52,12 +52,11 @@ class OrderServiceImpl(
             throw BusinessException(OrderErrorCode.INSUFFICIENT_STOCK)
         }
 
-        if (request.quantity > dailyStock.maxPurchaseCount) {
-            throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
-        }
-
         val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
         if (participationCount + request.quantity > dailyStock.maxPurchaseCount) {
+            if (participationCount == 0L) {
+                throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
+            }
             throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
         }
 
@@ -88,7 +87,7 @@ class OrderServiceImpl(
         val orderId = order.id ?: error("Order ID가 저장 후에도 null입니다")
         return CheckoutResponse(
             orderId = orderId,
-            totalAmount = (dailyStock.salePrice * request.quantity).toLong(),
+            totalAmount = totalPrice.toLong(),
             status = order.status.name,
         )
     }
