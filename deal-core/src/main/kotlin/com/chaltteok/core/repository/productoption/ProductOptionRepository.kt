@@ -9,4 +9,5 @@ import java.util.*
 interface ProductOptionRepository : JpaRepository<ProductOption, Long>, ProductOptionRepositoryCustom {
     fun findProductOptionByOptionUuid(uuid: String): Optional<ProductOption>
     fun findFirstByProduct(product: Product): Optional<ProductOption>
+    fun findAllByProductIn(products: List<Product>): List<ProductOption>
 }

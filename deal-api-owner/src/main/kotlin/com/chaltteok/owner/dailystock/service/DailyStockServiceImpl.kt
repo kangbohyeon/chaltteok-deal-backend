@@ -58,9 +58,12 @@ class DailyStockServiceImpl(
 
     @Transactional(readOnly = true)
     override fun findAllDailyStocks(): List<OwnerDailyStockListResponse> {
-        return dailyStockRepository.findAllWithProduct().map { stock ->
-            val optionUuid = productOptionRepository.findFirstByProduct(stock.product)
-                .map { it.optionUuid }.orElse("")
+        val stocks = dailyStockRepository.findAllWithProduct()
+        val optionMap = productOptionRepository
+            .findAllByProductIn(stocks.map { it.product }.distinctBy { it.id })
+            .associateBy { it.product.id }
+        return stocks.map { stock ->
+            val optionUuid = optionMap[stock.product.id]?.optionUuid ?: ""
             OwnerDailyStockListResponse.from(stock, optionUuid)
         }
     }
@@ -78,17 +81,9 @@ class DailyStockServiceImpl(
         val existing = dailyStockRepository.findByStockUuid(stockUuid)
             ?: throw BusinessException(DailyStockErrorCode.INVALID_ID)
         val productOption = productOptionRepository.findProductOptionByOptionUuid(request.optionId)
-            .orElseThrow { BusinessException(DailyStockErrorCode.INVALID_ID) }
+            .orElseThrow { BusinessException(DailyStockErrorCode.INVALID_OPTION_ID) }
         val finalPrice = request.salePrice ?: productOption.price
-        val newStock = request.toDailyStockEntity(productOption.product, finalPrice, existing.status)
-        dailyStockRepository.delete(existing)
-        dailyStockRepository.flush()
-        try {
-            dailyStockRepository.save(newStock)
-            logger.info { "daily stock updated: $stockUuid" }
-        } catch (e: DataIntegrityViolationException) {
-            logger.warn { "Duplicate stock on update" }
-            throw BusinessException(DailyStockErrorCode.DUPLICATE_STOCK)
-        }
+        existing.update(finalPrice, request.totalQty, request.startAt, request.endAt, request.maxPurchaseCount)
+        logger.info { "daily stock updated: $stockUuid" }
     }
 }

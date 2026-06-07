@@ -5,7 +5,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class OwnerDailyStockListResponse(
-    val id: Long,
     val uuid: String,
     val productUuid: String,
     val productName: String,
@@ -22,7 +21,6 @@ data class OwnerDailyStockListResponse(
 ) {
     companion object {
         fun from(stock: DailyStock, optionUuid: String) = OwnerDailyStockListResponse(
-            id = stock.id!!,
             uuid = stock.stockUuid,
             productUuid = stock.product.productUuid,
             productName = stock.product.name,
