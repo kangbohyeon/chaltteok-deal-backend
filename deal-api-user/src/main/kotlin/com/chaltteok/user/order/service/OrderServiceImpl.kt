@@ -36,7 +36,8 @@ class OrderServiceImpl(
             throw BusinessException(OrderErrorCode.STOCK_NOT_AVAILABLE)
         }
 
-        if (eventHistoryRepository.existsByUser_IdAndDailyStock_Id(userId, dailyStock.id)) {
+        val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
+        if (participationCount >= dailyStock.maxPurchaseCount) {
             throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
         }
 

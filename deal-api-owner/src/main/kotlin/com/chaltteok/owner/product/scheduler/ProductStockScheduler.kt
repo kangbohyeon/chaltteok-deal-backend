@@ -25,6 +25,15 @@ class ProductStockScheduler(
 
     @Scheduled(cron = "0 * * * * *")
     @Transactional
+    fun openScheduledTimeSales() {
+        val opened = dailyStockRepository.openScheduledStocks(LocalDateTime.now())
+        if (opened > 0) {
+            logger.info { "Opened $opened scheduled time sale stocks" }
+        }
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    @Transactional
     fun closeExpiredTimeSales() {
         val closed = dailyStockRepository.closeExpiredStocks(LocalDateTime.now())
         if (closed > 0) {

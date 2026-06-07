@@ -17,4 +17,8 @@ interface DailyStockRepository : JpaRepository<DailyStock, Long>, DailStockRepos
     @Query("UPDATE DailyStock ds SET ds.status = com.chaltteok.core.domain.enums.DailyStockStatus.CLOSED WHERE ds.endAt < :now AND ds.status = com.chaltteok.core.domain.enums.DailyStockStatus.OPEN")
     @Modifying
     fun closeExpiredStocks(now: LocalDateTime): Int
+
+    @Query("UPDATE DailyStock ds SET ds.status = com.chaltteok.core.domain.enums.DailyStockStatus.OPEN WHERE ds.startAt <= :now AND ds.status = com.chaltteok.core.domain.enums.DailyStockStatus.SCHEDULED")
+    @Modifying
+    fun openScheduledStocks(now: LocalDateTime): Int
 }
