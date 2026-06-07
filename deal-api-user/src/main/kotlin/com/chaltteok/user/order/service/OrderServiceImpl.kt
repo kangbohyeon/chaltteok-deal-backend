@@ -48,25 +48,30 @@ class OrderServiceImpl(
         if (dailyStock.status != DailyStockStatus.OPEN) {
             throw BusinessException(OrderErrorCode.STOCK_NOT_AVAILABLE)
         }
-        if (dailyStock.remainStock <= 0) {
+        if (dailyStock.remainStock < request.quantity) {
             throw BusinessException(OrderErrorCode.INSUFFICIENT_STOCK)
         }
 
-        val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
-        if (participationCount >= dailyStock.maxPurchaseCount) {
+        if (request.quantity > dailyStock.maxPurchaseCount) {
             throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
         }
 
-        dailyStock.decrease()
+        val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
+        if (participationCount + request.quantity > dailyStock.maxPurchaseCount) {
+            throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
+        }
 
+        dailyStock.decrease(request.quantity)
+
+        val totalPrice = dailyStock.salePrice * request.quantity
         val order = orderRepository.save(
-            Order(user = user, totalPrice = dailyStock.salePrice, status = OrderStatus.COMPLETED)
+            Order(user = user, totalPrice = totalPrice, status = OrderStatus.COMPLETED)
         )
         orderItemRepository.save(
-            OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
+            OrderItem(order = order, product = dailyStock.product, quantity = request.quantity, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = dailyStock.salePrice, status = PaymentStatus.SUCCESS, paymentMethod = "TIMESALE")
+            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = "TIMESALE")
         )
         eventHistoryRepository.save(EventHistory(user = user, dailyStock = dailyStock, order = order))
 
@@ -83,7 +88,7 @@ class OrderServiceImpl(
         val orderId = order.id ?: error("Order ID가 저장 후에도 null입니다")
         return CheckoutResponse(
             orderId = orderId,
-            totalAmount = dailyStock.salePrice.toLong(),
+            totalAmount = (dailyStock.salePrice * request.quantity).toLong(),
             status = order.status.name,
         )
     }
