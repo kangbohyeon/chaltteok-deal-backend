@@ -44,6 +44,15 @@ class DailyStock(
     @Column(length = 20)
     var status: DailyStockStatus = DailyStockStatus.OPEN,
 
+    @Column(name = "start_at")
+    val startAt: LocalDateTime? = null,
+
+    @Column(name = "end_at")
+    val endAt: LocalDateTime? = null,
+
+    @Column(name = "max_purchase_count", nullable = false)
+    val maxPurchaseCount: Int = 1,
+
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 
