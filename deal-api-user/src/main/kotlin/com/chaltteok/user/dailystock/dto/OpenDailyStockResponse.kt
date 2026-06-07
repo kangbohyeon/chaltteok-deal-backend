@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 
 data class OpenDailyStockResponse(
     val uuid: String,
+    val productUuid: String,
     val productName: String,
     val price: Long,
     val saleDate: LocalDate,
@@ -18,6 +19,7 @@ data class OpenDailyStockResponse(
     companion object {
         fun from(dailyStock: DailyStock) = OpenDailyStockResponse(
             uuid = dailyStock.stockUuid,
+            productUuid = dailyStock.product.productUuid,
             productName = dailyStock.product.name,
             price = dailyStock.product.price.toLong(),
             saleDate = dailyStock.saleDate,

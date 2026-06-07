@@ -65,9 +65,9 @@ class DailyStock(
     @Column(name = "stock_uuid", nullable = false, unique = true, length = 36)
     val stockUuid: String = UUID.randomUUID().toString()
 
-    fun decrease() {
-        check(remainStock > 0) { "재고가 없습니다" }
-        remainStock -= 1
+    fun decrease(quantity: Int = 1) {
+        check(remainStock >= quantity) { "재고가 부족합니다" }
+        remainStock -= quantity
         if (remainStock == 0) status = DailyStockStatus.SOLD_OUT
     }
 
