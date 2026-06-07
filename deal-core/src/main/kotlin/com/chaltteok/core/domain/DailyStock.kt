@@ -65,6 +65,12 @@ class DailyStock(
     @Column(name = "stock_uuid", nullable = false, unique = true, length = 36)
     val stockUuid: String = UUID.randomUUID().toString()
 
+    fun decrease() {
+        check(remainStock > 0) { "재고가 없습니다" }
+        remainStock -= 1
+        if (remainStock == 0) status = DailyStockStatus.SOLD_OUT
+    }
+
     fun update(salePrice: Int, totalQty: Int, startAt: LocalDateTime?, endAt: LocalDateTime?, maxPurchaseCount: Int) {
         val qtyDelta = totalQty - this.totalQty
         this.salePrice = salePrice

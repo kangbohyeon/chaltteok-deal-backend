@@ -21,7 +21,6 @@ import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.enums.OrderErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -58,8 +57,7 @@ class OrderServiceImpl(
             throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
         }
 
-        dailyStock.remainStock -= 1
-        if (dailyStock.remainStock == 0) dailyStock.status = DailyStockStatus.SOLD_OUT
+        dailyStock.decrease()
 
         val order = orderRepository.save(
             Order(user = user, totalPrice = dailyStock.salePrice, status = OrderStatus.COMPLETED)
@@ -70,12 +68,7 @@ class OrderServiceImpl(
         paymentRepository.save(
             Payment(order = order, amount = dailyStock.salePrice, status = PaymentStatus.SUCCESS, paymentMethod = "TIMESALE")
         )
-
-        try {
-            eventHistoryRepository.saveAndFlush(EventHistory(user = user, dailyStock = dailyStock, order = order))
-        } catch (e: DataIntegrityViolationException) {
-            throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
-        }
+        eventHistoryRepository.save(EventHistory(user = user, dailyStock = dailyStock, order = order))
 
         notificationRepository.save(
             Notification(
@@ -85,10 +78,11 @@ class OrderServiceImpl(
             )
         )
 
-        logger.info { "타임세일 주문 완료 — userId=$userId, stockUuid=${request.stockUuid}, orderId=${order.id}" }
+        logger.info { "타임세일 주문 완료 — stockUuid=${request.stockUuid}, orderNumber=${order.orderNumber}" }
 
+        val orderId = order.id ?: error("Order ID가 저장 후에도 null입니다")
         return CheckoutResponse(
-            orderId = order.id!!,
+            orderId = orderId,
             totalAmount = dailyStock.salePrice.toLong(),
             status = order.status.name,
         )
