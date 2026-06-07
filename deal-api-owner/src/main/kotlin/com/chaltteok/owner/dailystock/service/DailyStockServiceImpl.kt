@@ -3,6 +3,7 @@ package com.chaltteok.owner.dailystock.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
+import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
 import com.chaltteok.owner.dailystock.dto.DailyStocksRegisterRequest
 import com.chaltteok.owner.dailystock.dto.OwnerDailyStockListResponse
@@ -20,6 +21,7 @@ private val logger = KotlinLogging.logger {}
 class DailyStockServiceImpl(
     private val dailyStockRepository: DailyStockRepository,
     private val productOptionRepository: ProductOptionRepository,
+    private val eventHistoryRepository: EventHistoryRepository,
 ) : DailyStockService {
     override fun registerDailyStock(dailyStocksRegisterRequest: DailyStocksRegisterRequest) {
         val productOption =
@@ -72,6 +74,7 @@ class DailyStockServiceImpl(
     override fun deleteDailyStock(stockUuid: String) {
         val stock = dailyStockRepository.findByStockUuid(stockUuid)
             ?: throw BusinessException(DailyStockErrorCode.INVALID_ID)
+        eventHistoryRepository.deleteAllByDailyStock(stock)
         dailyStockRepository.delete(stock)
         logger.info { "daily stock deleted: $stockUuid" }
     }

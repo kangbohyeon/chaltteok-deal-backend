@@ -1,6 +1,7 @@
 package com.chaltteok.user.order.controller
 
 import com.chaltteok.common.dto.ResponseDTO
+import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.service.OrderService
 import jakarta.validation.Valid
@@ -16,10 +17,10 @@ class OrderController(
     fun placeOrder(
         authentication: Authentication,
         @RequestBody @Valid request: OrderRequest,
-    ): ResponseDTO<String> {
+    ): ResponseDTO<CheckoutResponse> {
         val userId = authentication.principal as Long
-        orderService.placeOrder(userId, request)
-        return ResponseDTO.success("주문 요청이 접수되었습니다.")
+        val result = orderService.placeOrder(userId, request)
+        return ResponseDTO.success(result)
     }
 
     @PostMapping("/{orderNumber}/cancel")

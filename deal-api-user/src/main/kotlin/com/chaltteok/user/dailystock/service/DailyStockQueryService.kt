@@ -4,5 +4,5 @@ import com.chaltteok.user.dailystock.dto.OpenDailyStockResponse
 
 interface DailyStockQueryService {
     fun getOpenDailyStocks(): List<OpenDailyStockResponse>
-    fun getParticipatedStockIds(userId: Long): List<Long>
+    fun getParticipatedStockIds(userId: Long): List<String>
 }

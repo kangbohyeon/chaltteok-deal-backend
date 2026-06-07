@@ -10,4 +10,5 @@ interface EventHistoryRepository : JpaRepository<EventHistory, Long>, EventHisto
     fun findAllByUser_Id(userId: Long): List<EventHistory>
     fun existsByUser_IdAndDailyStock_Id(userId: Long, dailyStockId: Long?): Boolean
     fun countByUser_IdAndDailyStock_Id(userId: Long, dailyStockId: Long?): Long
+    fun deleteAllByDailyStock(dailyStock: DailyStock)
 }

@@ -1,8 +1,8 @@
 package com.chaltteok.user.order.dto
 
-import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.NotBlank
 
 data class OrderRequest(
-    @field:NotNull
-    val dailyStockId: Long,
+    @field:NotBlank
+    val stockUuid: String,
 )

@@ -2,7 +2,9 @@ package com.chaltteok.core.repository.dailystock
 
 import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.enums.DailyStockStatus
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import java.time.LocalDateTime
@@ -12,6 +14,10 @@ interface DailyStockRepository : JpaRepository<DailyStock, Long>, DailStockRepos
     fun findAllWithProduct(): List<DailyStock>
 
     fun findByStockUuid(stockUuid: String): DailyStock?
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ds FROM DailyStock ds JOIN FETCH ds.product WHERE ds.stockUuid = :uuid")
+    fun findByStockUuidWithLock(uuid: String): DailyStock?
 
     @Query("SELECT ds FROM DailyStock ds JOIN FETCH ds.product WHERE ds.status = :status")
     fun findAllByStatusWithProduct(status: DailyStockStatus): List<DailyStock>

@@ -24,7 +24,7 @@ class DailyStockQueryServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun getParticipatedStockIds(userId: Long): List<Long> =
+    override fun getParticipatedStockIds(userId: Long): List<String> =
         eventHistoryRepository.findAllByUser_Id(userId)
-            .mapNotNull { it.dailyStock.id }
+            .mapNotNull { it.dailyStock.stockUuid }
 }
