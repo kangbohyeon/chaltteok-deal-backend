@@ -2,6 +2,7 @@ package com.chaltteok.user.dailystock.dto
 
 import com.chaltteok.core.domain.DailyStock
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class OpenDailyStockResponse(
     val id: Long,
@@ -10,6 +11,9 @@ data class OpenDailyStockResponse(
     val saleDate: LocalDate,
     val remainStock: Int,
     val totalStock: Int,
+    val startAt: LocalDateTime?,
+    val endAt: LocalDateTime?,
+    val maxPurchaseCount: Int,
 ) {
     companion object {
         fun from(dailyStock: DailyStock) = OpenDailyStockResponse(
@@ -19,6 +23,9 @@ data class OpenDailyStockResponse(
             saleDate = dailyStock.saleDate,
             remainStock = dailyStock.remainStock,
             totalStock = dailyStock.totalQty,
+            startAt = dailyStock.startAt,
+            endAt = dailyStock.endAt,
+            maxPurchaseCount = dailyStock.maxPurchaseCount,
         )
     }
 }

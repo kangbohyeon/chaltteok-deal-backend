@@ -1,6 +1,7 @@
 package com.chaltteok.owner.dailystock.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
 import com.chaltteok.owner.dailystock.dto.DailyStocksRegisterRequest
@@ -9,6 +10,7 @@ import com.chaltteok.owner.dailystock.enums.DailyStockType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 private val logger = KotlinLogging.logger {}
 
@@ -30,7 +32,18 @@ class DailyStockServiceImpl(
             throw BusinessException(DailyStockErrorCode.EVENT_PRICE_REQUIRED)
         }
 
-        val stock = dailyStocksRegisterRequest.toDailyStockEntity(productOption.product, finalPrice)
+        val initialStatus = if (stockType == DailyStockType.TIMESALE) {
+            val now = LocalDateTime.now()
+            if (dailyStocksRegisterRequest.startAt != null && dailyStocksRegisterRequest.startAt.isAfter(now)) {
+                DailyStockStatus.SCHEDULED
+            } else {
+                DailyStockStatus.OPEN
+            }
+        } else {
+            DailyStockStatus.OPEN
+        }
+
+        val stock = dailyStocksRegisterRequest.toDailyStockEntity(productOption.product, finalPrice, initialStatus)
 
         try {
             dailyStockRepository.save(stock)

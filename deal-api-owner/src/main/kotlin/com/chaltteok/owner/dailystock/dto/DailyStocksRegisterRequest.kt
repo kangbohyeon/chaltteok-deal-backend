@@ -2,9 +2,11 @@ package com.chaltteok.owner.dailystock.dto
 
 import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.Product
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.owner.dailystock.enums.DailyStockType
 import jakarta.validation.constraints.NotNull
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class DailyStocksRegisterRequest(
     @field:NotNull(message = "option id must not be null")
@@ -19,8 +21,19 @@ data class DailyStocksRegisterRequest(
 
     @field:NotNull(message = "sale amount must not be null")
     val totalQty: Int,
+
+    val startAt: LocalDateTime? = null,
+    val endAt: LocalDateTime? = null,
+    val maxPurchaseCount: Int = 1,
 ) {
-    fun toDailyStockEntity(product: Product, salePrice: Int): DailyStock {
+    init {
+        if ((stockType ?: DailyStockType.NORMAL) == DailyStockType.TIMESALE) {
+            require(startAt != null) { "startAt is required for TIMESALE stock" }
+            require(endAt != null) { "endAt is required for TIMESALE stock" }
+        }
+    }
+
+    fun toDailyStockEntity(product: Product, salePrice: Int, status: DailyStockStatus = DailyStockStatus.OPEN): DailyStock {
         val finalStockType = (this.stockType ?: DailyStockType.NORMAL).name
 
         return DailyStock(
@@ -30,6 +43,10 @@ data class DailyStocksRegisterRequest(
             salePrice = salePrice,
             totalQty = totalQty,
             remainStock = totalQty,
+            status = status,
+            startAt = startAt,
+            endAt = endAt,
+            maxPurchaseCount = maxPurchaseCount,
         )
     }
 }
