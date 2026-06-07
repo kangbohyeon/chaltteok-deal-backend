@@ -5,11 +5,13 @@ import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
 import com.chaltteok.owner.dailystock.dto.DailyStocksRegisterRequest
+import com.chaltteok.owner.dailystock.dto.OwnerDailyStockListResponse
 import com.chaltteok.owner.dailystock.enums.DailyStockErrorCode
 import com.chaltteok.owner.dailystock.enums.DailyStockType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 private val logger = KotlinLogging.logger {}
@@ -50,6 +52,42 @@ class DailyStockServiceImpl(
             logger.info { "daily stock registered successfully" }
         } catch (e: DataIntegrityViolationException) {
             logger.warn { "Duplicate stock registration attempt" }
+            throw BusinessException(DailyStockErrorCode.DUPLICATE_STOCK)
+        }
+    }
+
+    @Transactional(readOnly = true)
+    override fun findAllDailyStocks(): List<OwnerDailyStockListResponse> {
+        return dailyStockRepository.findAllWithProduct().map { stock ->
+            val optionUuid = productOptionRepository.findFirstByProduct(stock.product)
+                .map { it.optionUuid }.orElse("")
+            OwnerDailyStockListResponse.from(stock, optionUuid)
+        }
+    }
+
+    @Transactional
+    override fun deleteDailyStock(stockUuid: String) {
+        val stock = dailyStockRepository.findByStockUuid(stockUuid)
+            ?: throw BusinessException(DailyStockErrorCode.INVALID_ID)
+        dailyStockRepository.delete(stock)
+        logger.info { "daily stock deleted: $stockUuid" }
+    }
+
+    @Transactional
+    override fun updateDailyStock(stockUuid: String, request: DailyStocksRegisterRequest) {
+        val existing = dailyStockRepository.findByStockUuid(stockUuid)
+            ?: throw BusinessException(DailyStockErrorCode.INVALID_ID)
+        val productOption = productOptionRepository.findProductOptionByOptionUuid(request.optionId)
+            .orElseThrow { BusinessException(DailyStockErrorCode.INVALID_ID) }
+        val finalPrice = request.salePrice ?: productOption.price
+        val newStock = request.toDailyStockEntity(productOption.product, finalPrice, existing.status)
+        dailyStockRepository.delete(existing)
+        dailyStockRepository.flush()
+        try {
+            dailyStockRepository.save(newStock)
+            logger.info { "daily stock updated: $stockUuid" }
+        } catch (e: DataIntegrityViolationException) {
+            logger.warn { "Duplicate stock on update" }
             throw BusinessException(DailyStockErrorCode.DUPLICATE_STOCK)
         }
     }
