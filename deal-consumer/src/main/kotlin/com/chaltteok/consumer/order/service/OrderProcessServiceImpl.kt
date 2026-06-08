@@ -2,13 +2,21 @@ package com.chaltteok.consumer.order.service
 
 import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
+import com.chaltteok.core.domain.DailyStock
+import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
+import com.chaltteok.core.domain.Payment
+import com.chaltteok.core.domain.User
+import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
+import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
+import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
+import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.orm.ObjectOptimisticLockingFailureException
@@ -19,6 +27,7 @@ private val log = KotlinLogging.logger {}
 
 private const val MAX_RETRY = 3
 private const val RETRY_DELAY_MS = 50L
+private const val PAYMENT_METHOD_TIMESALE = "TIMESALE"
 
 @Service
 class OrderProcessServiceImpl(
@@ -26,7 +35,9 @@ class OrderProcessServiceImpl(
     private val dailyStockRepository: DailyStockRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
+    private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
+    private val notificationRepository: NotificationRepository,
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
 ) : OrderProcessService {
@@ -37,13 +48,11 @@ class OrderProcessServiceImpl(
         val dailyStock = dailyStockRepository.findById(dailyStockId)
             .orElseThrow { RuntimeException("DailyStock not found: $dailyStockId") }
 
-        // 1단계: 1인 1회 구매 검증 (REQUIRES_NEW 트랜잭션 — UniqueKey 위반 격리)
         if (duplicateChecker.isDuplicate(user, dailyStock)) {
             log.warn { "중복 구매 요청 무시 — userId=$userId, dailyStockId=$dailyStockId" }
             return
         }
 
-        // 2단계: 재고 차감 (낙관적 락 재시도, 각 시도마다 별도 REQUIRES_NEW 트랜잭션)
         var retries = 0
         var stockDecremented = false
         while (!stockDecremented && retries < MAX_RETRY) {
@@ -64,27 +73,35 @@ class OrderProcessServiceImpl(
             }
         }
 
-        // 3단계: 주문 확정 (Order + OrderItem 저장, EventHistory에 order 역참조 backfill)
-        confirmOrder(userId, dailyStockId)
+        confirmOrder(user, dailyStock)
     }
 
     @Transactional
-    fun confirmOrder(userId: Long, dailyStockId: Long) {
-        val user = userRepository.findById(userId).orElseThrow()
-        val dailyStock = dailyStockRepository.findById(dailyStockId).orElseThrow()
+    internal fun confirmOrder(user: User, dailyStock: DailyStock) {
+        val totalPrice = dailyStock.salePrice
 
         val order = orderRepository.save(
-            Order(user = user, totalPrice = dailyStock.product.price, status = OrderStatus.COMPLETED)
+            Order(user = user, totalPrice = totalPrice, status = OrderStatus.COMPLETED)
         )
         orderItemRepository.save(
-            OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.product.price)
+            OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
+        )
+        paymentRepository.save(
+            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE)
         )
 
-        // EventHistory에 확정된 Order 역참조 backfill
         eventHistoryRepository.findByUserAndDailyStock(user, dailyStock)?.let {
             it.order = order
         }
 
-        log.info { "주문 확정 완료 — orderId=${order.id}, userId=$userId, dailyStockId=$dailyStockId" }
+        notificationRepository.save(
+            Notification(
+                type = NotificationType.ORDER.name,
+                title = "새 주문이 들어왔습니다",
+                message = "${dailyStock.product.name} (%,d원)".format(dailyStock.salePrice),
+            )
+        )
+
+        log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
     }
 }
