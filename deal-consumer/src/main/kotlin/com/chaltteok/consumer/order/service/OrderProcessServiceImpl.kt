@@ -90,7 +90,8 @@ class OrderProcessServiceImpl(
             Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE)
         )
 
-        eventHistoryRepository.findByUserAndDailyStock(user, dailyStock)?.let {
+        // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill
+        eventHistoryRepository.findFirstByUserAndDailyStockAndOrderIsNull(user, dailyStock)?.let {
             it.order = order
         }
 
