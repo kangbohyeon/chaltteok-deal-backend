@@ -52,12 +52,15 @@ class OrderServiceImpl(
             throw BusinessException(OrderErrorCode.INSUFFICIENT_STOCK)
         }
 
-        val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
-        if (participationCount + request.quantity > dailyStock.maxPurchaseCount) {
-            if (participationCount == 0L) {
-                throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
+        val maxPurchaseCount = dailyStock.maxPurchaseCount
+        if (maxPurchaseCount != null) {
+            val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
+            if (participationCount + request.quantity > maxPurchaseCount) {
+                if (participationCount == 0L) {
+                    throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
+                }
+                throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
             }
-            throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
         }
 
         dailyStock.decrease(request.quantity)

@@ -24,7 +24,7 @@ data class DailyStocksRegisterRequest(
 
     val startAt: LocalDateTime? = null,
     val endAt: LocalDateTime? = null,
-    val maxPurchaseCount: Int = 1,
+    val maxPurchaseCount: Int? = null,
 ) {
     init {
         if ((stockType ?: DailyStockType.NORMAL) == DailyStockType.TIMESALE) {

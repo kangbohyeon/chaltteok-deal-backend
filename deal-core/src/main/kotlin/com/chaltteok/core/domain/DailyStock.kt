@@ -50,8 +50,8 @@ class DailyStock(
     @Column(name = "end_at")
     var endAt: LocalDateTime? = null,
 
-    @Column(name = "max_purchase_count", nullable = false)
-    var maxPurchaseCount: Int = 1,
+    @Column(name = "max_purchase_count", nullable = true)
+    var maxPurchaseCount: Int? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
@@ -71,7 +71,7 @@ class DailyStock(
         if (remainStock == 0) status = DailyStockStatus.SOLD_OUT
     }
 
-    fun update(salePrice: Int, totalQty: Int, startAt: LocalDateTime?, endAt: LocalDateTime?, maxPurchaseCount: Int) {
+    fun update(salePrice: Int, totalQty: Int, startAt: LocalDateTime?, endAt: LocalDateTime?, maxPurchaseCount: Int?) {
         val qtyDelta = totalQty - this.totalQty
         this.salePrice = salePrice
         this.totalQty = totalQty
