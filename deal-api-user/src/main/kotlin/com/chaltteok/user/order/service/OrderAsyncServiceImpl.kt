@@ -37,6 +37,8 @@ class OrderAsyncServiceImpl(
         if (maxPurchaseCount != null) {
             val participated = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
             if (participated + request.quantity > maxPurchaseCount) {
+                // participated == 0: 구매 이력은 없지만 요청 수량 자체가 1인 한도 초과
+                // participated  > 0: 이미 참여한 이력이 있어 추가 구매 불가
                 if (participated == 0L) throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
                 throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
             }
@@ -44,9 +46,8 @@ class OrderAsyncServiceImpl(
 
         val dailyStockId = dailyStock.id ?: error("DailyStock ID가 null입니다")
         orderEventProducer.sendOrderEvent(userId, dailyStockId)
-
         logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId" }
 
-        return AsyncOrderResponse(status = "PENDING", message = "주문이 접수되었습니다.")
+        return AsyncOrderResponse.pending()
     }
 }

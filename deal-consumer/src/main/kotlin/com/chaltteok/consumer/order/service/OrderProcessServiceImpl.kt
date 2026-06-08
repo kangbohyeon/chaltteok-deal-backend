@@ -2,10 +2,12 @@ package com.chaltteok.consumer.order.service
 
 import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
+import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.Payment
+import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
@@ -25,6 +27,7 @@ private val log = KotlinLogging.logger {}
 
 private const val MAX_RETRY = 3
 private const val RETRY_DELAY_MS = 50L
+private const val PAYMENT_METHOD_TIMESALE = "TIMESALE"
 
 @Service
 class OrderProcessServiceImpl(
@@ -70,13 +73,11 @@ class OrderProcessServiceImpl(
             }
         }
 
-        confirmOrder(userId, dailyStockId)
+        confirmOrder(user, dailyStock)
     }
 
     @Transactional
-    fun confirmOrder(userId: Long, dailyStockId: Long) {
-        val user = userRepository.findById(userId).orElseThrow()
-        val dailyStock = dailyStockRepository.findById(dailyStockId).orElseThrow()
+    internal fun confirmOrder(user: User, dailyStock: DailyStock) {
         val totalPrice = dailyStock.salePrice
 
         val order = orderRepository.save(
@@ -86,7 +87,7 @@ class OrderProcessServiceImpl(
             OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = "TIMESALE")
+            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE)
         )
 
         eventHistoryRepository.findByUserAndDailyStock(user, dailyStock)?.let {
@@ -101,6 +102,6 @@ class OrderProcessServiceImpl(
             )
         )
 
-        log.info { "주문 확정 완료 — orderId=${order.id}, userId=$userId, dailyStockId=$dailyStockId" }
+        log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
     }
 }
