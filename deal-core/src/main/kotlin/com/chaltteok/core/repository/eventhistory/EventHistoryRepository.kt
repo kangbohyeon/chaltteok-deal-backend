@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param
 
 interface EventHistoryRepository : JpaRepository<EventHistory, Long>, EventHistoryRepositoryCustom {
     fun findByUserAndDailyStock(user: User, dailyStock: DailyStock): EventHistory?
+    fun findFirstByUserAndDailyStockAndOrderIsNull(user: User, dailyStock: DailyStock): EventHistory?
     fun findAllByUser_Id(userId: Long): List<EventHistory>
     fun existsByUser_IdAndDailyStock_Id(userId: Long, dailyStockId: Long?): Boolean
     fun countByUser_IdAndDailyStock_Id(userId: Long, dailyStockId: Long?): Long
