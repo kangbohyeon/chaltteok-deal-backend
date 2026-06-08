@@ -100,10 +100,9 @@ class ProductServiceImpl(
     override fun deleteProduct(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
+        val productId = product.id ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
         product.imageUrl?.let { fileUploader.deleteFile(it) }
-        productOptionRepository.deleteAll(
-            productOptionRepository.findAll().filter { it.product.id == product.id }
-        )
+        productOptionRepository.deleteAllByProductId(productId)
         productRepository.delete(product)
         logger.info { "product deleted: $productUuid" }
     }
