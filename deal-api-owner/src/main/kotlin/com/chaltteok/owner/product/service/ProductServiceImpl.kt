@@ -51,9 +51,20 @@ class ProductServiceImpl(
     override fun updateProduct(productUuid: String, request: ProductUpdateRequest, image: MultipartFile?) {
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
-        val newImageUrl = image?.takeIf { !it.isEmpty }?.let { newImage ->
-            product.imageUrl?.let { fileUploader.deleteFile(it) }
-            fileUploader.uploadFile(newImage)
+
+        val newImageUrl = when {
+            // 새 이미지 업로드: 기존 이미지 삭제 후 새 이미지 저장
+            image != null && !image.isEmpty -> {
+                product.imageUrl?.let { fileUploader.deleteFile(it) }
+                fileUploader.uploadFile(image)
+            }
+            // deleteImage=true이고 새 이미지 없음: 기존 이미지만 삭제
+            request.deleteImage && image == null -> {
+                product.imageUrl?.let { fileUploader.deleteFile(it) }
+                null
+            }
+            // 그 외: 이미지 변경 없음
+            else -> product.imageUrl
         }
 
         product.name = request.name
@@ -61,7 +72,7 @@ class ProductServiceImpl(
         product.price = request.price
         product.isActive = request.isActive
         product.isRecommended = request.isRecommended
-        newImageUrl?.let { product.imageUrl = it }
+        product.imageUrl = newImageUrl
         request.displayOrder?.let { product.displayOrder = it }
 
         val effectiveStockQuantity = request.stockQuantity ?: product.stockQuantity

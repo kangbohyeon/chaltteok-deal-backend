@@ -17,7 +17,7 @@ class LocalFileUploader(
 ) {
     private val tika = Tika()
 
-    fun uploadFile(file: MultipartFile): String {
+    fun uploadFile(file: MultipartFile, subDir: String = "product"): String {
 
         // 파일 존재 여부 확인
         if (file.isEmpty) {
@@ -41,7 +41,7 @@ class LocalFileUploader(
             throw BusinessException(ProductErrorCode.INVALID_FILE_TYPE)
         }
 
-        val directory = Paths.get(uploadDir).resolve("product").toAbsolutePath().normalize()
+        val directory = Paths.get(uploadDir).resolve(subDir).toAbsolutePath().normalize()
 
         // 디렉토리 없으면 생성
         if (!Files.exists(directory)) {
@@ -57,8 +57,8 @@ class LocalFileUploader(
         val filePath = directory.resolve(savedFileName)
         file.transferTo(filePath.toFile())
 
-        // URL 경로 반환 (/images/product/xxx.jpg 형태로 정적 파일 서빙)
-        return "/images/product/$savedFileName"
+        // URL 경로 반환 (/images/{subDir}/xxx.jpg 형태로 정적 파일 서빙)
+        return "/images/$subDir/$savedFileName"
     }
 
     fun deleteFile(imageUrl: String) {
