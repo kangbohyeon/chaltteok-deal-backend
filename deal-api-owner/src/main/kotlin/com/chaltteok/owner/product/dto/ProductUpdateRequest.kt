@@ -24,4 +24,5 @@ class ProductUpdateRequest(
     @field:Min(value = 0, message = "display order must be 0 or more")
     @field:Max(value = ProductConstants.DISPLAY_ORDER_MAX, message = "display order must be ${ProductConstants.DISPLAY_ORDER_MAX} or less")
     val displayOrder: Int? = null,
+    val deleteImage: Boolean = false,
 )

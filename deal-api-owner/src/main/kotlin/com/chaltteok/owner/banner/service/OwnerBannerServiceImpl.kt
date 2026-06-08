@@ -25,7 +25,7 @@ class OwnerBannerServiceImpl(
 
     @Transactional
     override fun create(request: BannerRequest, image: MultipartFile?) {
-        val imageUrl = image?.takeIf { !it.isEmpty }?.let { localFileUploader.uploadFile(it) }
+        val imageUrl = image?.takeIf { !it.isEmpty }?.let { localFileUploader.uploadFile(it, "banner") }
         val banner = Banner(
             title = request.title,
             subtitle = request.subtitle,
@@ -45,7 +45,7 @@ class OwnerBannerServiceImpl(
         val banner = bannerRepository.findByBannerUuid(bannerUuid)
             ?: throw BusinessException(BannerErrorCode.BANNER_NOT_FOUND)
         val newImageUrl = image?.takeIf { !it.isEmpty }?.let { newImage ->
-            val uploaded = localFileUploader.uploadFile(newImage)
+            val uploaded = localFileUploader.uploadFile(newImage, "banner")
             banner.imageUrl?.let { localFileUploader.deleteFile(it) }
             uploaded
         }
