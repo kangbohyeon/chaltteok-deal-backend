@@ -18,8 +18,8 @@ class DailyStockQueryController(
         ResponseDTO.success(dailyStockQueryService.getOpenDailyStocks())
 
     @GetMapping("/participated")
-    fun getParticipatedStockIds(authentication: Authentication): ResponseDTO<List<String>> {
+    fun getParticipationCounts(authentication: Authentication): ResponseDTO<Map<String, Int>> {
         val userId = authentication.principal as Long
-        return ResponseDTO.success(dailyStockQueryService.getParticipatedStockIds(userId))
+        return ResponseDTO.success(dailyStockQueryService.getParticipationCounts(userId))
     }
 }

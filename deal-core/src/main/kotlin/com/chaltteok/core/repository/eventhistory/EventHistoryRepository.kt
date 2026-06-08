@@ -20,4 +20,7 @@ interface EventHistoryRepository : JpaRepository<EventHistory, Long>, EventHisto
 
     @Query("SELECT eh.dailyStock.stockUuid FROM EventHistory eh WHERE eh.user.id = :userId")
     fun findStockUuidsByUserId(@Param("userId") userId: Long): List<String>
+
+    @Query("SELECT eh FROM EventHistory eh JOIN FETCH eh.dailyStock WHERE eh.user.id = :userId")
+    fun findAllWithStockByUserId(@Param("userId") userId: Long): List<EventHistory>
 }

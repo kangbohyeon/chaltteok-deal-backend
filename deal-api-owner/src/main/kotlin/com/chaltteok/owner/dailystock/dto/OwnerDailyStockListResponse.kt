@@ -17,7 +17,7 @@ data class OwnerDailyStockListResponse(
     val status: String,
     val startAt: LocalDateTime?,
     val endAt: LocalDateTime?,
-    val maxPurchaseCount: Int,
+    val maxPurchaseCount: Int?,
 ) {
     companion object {
         fun from(stock: DailyStock, optionUuid: String) = OwnerDailyStockListResponse(

@@ -16,7 +16,7 @@ data class OpenDailyStockResponse(
     val totalStock: Int,
     val startAt: LocalDateTime?,
     val endAt: LocalDateTime?,
-    val maxPurchaseCount: Int,
+    val maxPurchaseCount: Int?,
 ) {
     companion object {
         fun from(dailyStock: DailyStock) = OpenDailyStockResponse(
