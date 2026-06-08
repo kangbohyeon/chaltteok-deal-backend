@@ -22,8 +22,16 @@ interface DailyStockRepository : JpaRepository<DailyStock, Long>, DailStockRepos
     @Query("SELECT ds FROM DailyStock ds JOIN FETCH ds.product WHERE ds.status = :status")
     fun findAllByStatusWithProduct(status: DailyStockStatus): List<DailyStock>
 
-    @Query("SELECT ds FROM DailyStock ds JOIN FETCH ds.product WHERE ds.status = :status AND ds.startAt <= :now AND ds.endAt >= :now")
-    fun findActiveTimeSaleStocks(status: DailyStockStatus, now: LocalDateTime): List<DailyStock>
+    @Query("""
+        SELECT ds FROM DailyStock ds JOIN FETCH ds.product
+        WHERE ds.stockType = 'TIMESALE'
+        AND ds.startAt <= :now AND ds.endAt >= :now
+        AND ds.status NOT IN (
+            com.chaltteok.core.domain.enums.DailyStockStatus.SOLD_OUT,
+            com.chaltteok.core.domain.enums.DailyStockStatus.CLOSED
+        )
+    """)
+    fun findActiveTimeSaleStocks(now: LocalDateTime): List<DailyStock>
 
     @Query("UPDATE DailyStock ds SET ds.status = com.chaltteok.core.domain.enums.DailyStockStatus.CLOSED WHERE ds.endAt < :now AND ds.status = com.chaltteok.core.domain.enums.DailyStockStatus.OPEN")
     @Modifying

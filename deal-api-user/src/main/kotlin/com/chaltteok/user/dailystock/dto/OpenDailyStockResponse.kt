@@ -1,6 +1,7 @@
 package com.chaltteok.user.dailystock.dto
 
 import com.chaltteok.core.domain.DailyStock
+import com.chaltteok.core.domain.enums.DailyStockStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -9,6 +10,7 @@ data class OpenDailyStockResponse(
     val productUuid: String,
     val productName: String,
     val price: Long,
+    val status: DailyStockStatus,
     val saleDate: LocalDate,
     val remainStock: Int,
     val totalStock: Int,
@@ -21,7 +23,8 @@ data class OpenDailyStockResponse(
             uuid = dailyStock.stockUuid,
             productUuid = dailyStock.product.productUuid,
             productName = dailyStock.product.name,
-            price = dailyStock.product.price.toLong(),
+            price = dailyStock.salePrice.toLong(),
+            status = dailyStock.status,
             saleDate = dailyStock.saleDate,
             remainStock = dailyStock.remainStock,
             totalStock = dailyStock.totalQty,

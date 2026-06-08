@@ -19,7 +19,7 @@ class DailyStockQueryServiceImpl(
         val now = LocalDateTime.now()
         val legacy = dailyStockRepository.findAllByStatusWithProduct(DailyStockStatus.OPEN)
             .filter { it.startAt == null }
-        val timeSale = dailyStockRepository.findActiveTimeSaleStocks(DailyStockStatus.OPEN, now)
+        val timeSale = dailyStockRepository.findActiveTimeSaleStocks(now)
         return (legacy + timeSale).map { OpenDailyStockResponse.from(it) }
     }
 
