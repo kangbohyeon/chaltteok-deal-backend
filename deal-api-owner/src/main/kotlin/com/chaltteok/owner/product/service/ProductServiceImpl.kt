@@ -2,7 +2,6 @@ package com.chaltteok.owner.product.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.cache.CacheNames
-import com.chaltteok.core.repository.comment.CommentRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
 import com.chaltteok.owner.product.dto.ProductListResponse
@@ -23,7 +22,6 @@ private val logger = KotlinLogging.logger {}
 class ProductServiceImpl(
     private val productRepository: ProductRepository,
     private val productOptionRepository: ProductOptionRepository,
-    private val commentRepository: CommentRepository,
     private val fileUploader: LocalFileUploader,
 ) : ProductService {
 
@@ -102,11 +100,9 @@ class ProductServiceImpl(
     override fun deleteProduct(productUuid: String) {
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
+        val productId = product.id ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
         product.imageUrl?.let { fileUploader.deleteFile(it) }
-        commentRepository.deleteAllByProductId(product.id!!)
-        productOptionRepository.deleteAll(
-            productOptionRepository.findAll().filter { it.product.id == product.id }
-        )
+        productOptionRepository.deleteAllByProductId(productId)
         productRepository.delete(product)
         logger.info { "product deleted: $productUuid" }
     }

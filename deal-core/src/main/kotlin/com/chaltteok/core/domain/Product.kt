@@ -49,4 +49,7 @@ class Product(
 
     @Column(name = "product_uuid", nullable = false, length = 36)
     val productUuid: String = UUID.randomUUID().toString()
+
+    @OneToMany(mappedBy = "product", cascade = [CascadeType.REMOVE], orphanRemoval = true)
+    val comments: MutableList<Comment> = mutableListOf()
 }

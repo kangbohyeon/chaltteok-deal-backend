@@ -62,8 +62,12 @@ class LocalFileUploader(
     }
 
     fun deleteFile(imageUrl: String) {
+        val baseDir = Paths.get(uploadDir).toAbsolutePath().normalize()
         val fileName = imageUrl.removePrefix("/images/")
-        val filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(fileName)
+        val filePath = baseDir.resolve(fileName).normalize()
+        if (!filePath.startsWith(baseDir)) {
+            throw BusinessException(ProductErrorCode.FILE_UPLOAD_ERROR)
+        }
         Files.deleteIfExists(filePath)
     }
 }
