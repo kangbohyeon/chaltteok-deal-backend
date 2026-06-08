@@ -8,4 +8,6 @@ import org.springframework.data.repository.query.Param
 interface OrderItemRepository : JpaRepository<OrderItem, Long>, OrderItemRepositoryCustom {
     @Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.product WHERE oi.order.id IN :orderIds")
     fun findByOrderIdsWithProduct(@Param("orderIds") orderIds: List<Long>): List<OrderItem>
+
+    fun existsByProductId(productId: Long): Boolean
 }

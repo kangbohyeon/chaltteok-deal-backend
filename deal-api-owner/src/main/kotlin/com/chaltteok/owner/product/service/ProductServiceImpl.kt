@@ -2,6 +2,7 @@ package com.chaltteok.owner.product.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.cache.CacheNames
+import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
 import com.chaltteok.owner.product.dto.ProductListResponse
@@ -22,6 +23,7 @@ private val logger = KotlinLogging.logger {}
 class ProductServiceImpl(
     private val productRepository: ProductRepository,
     private val productOptionRepository: ProductOptionRepository,
+    private val orderItemRepository: OrderItemRepository,
     private val fileUploader: LocalFileUploader,
 ) : ProductService {
 
@@ -112,6 +114,9 @@ class ProductServiceImpl(
         val product = productRepository.findByProductUuid(productUuid)
             ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
         val productId = product.id ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
+        if (orderItemRepository.existsByProductId(productId)) {
+            throw BusinessException(ProductErrorCode.PRODUCT_HAS_ORDERS)
+        }
         product.imageUrl?.let { fileUploader.deleteFile(it) }
         productOptionRepository.deleteAllByProductId(productId)
         productRepository.delete(product)
