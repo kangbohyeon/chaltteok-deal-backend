@@ -1,4 +1,4 @@
-package com.chaltteok.user.stats.service
+package com.chaltteok.core.service.orderstats
 
 import java.time.LocalDate
 

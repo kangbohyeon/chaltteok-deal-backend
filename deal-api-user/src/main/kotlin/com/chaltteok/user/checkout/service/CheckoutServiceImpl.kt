@@ -17,7 +17,7 @@ import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.checkout.dto.CheckoutRequest
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.checkout.enums.CheckoutErrorCode
-import com.chaltteok.user.stats.service.OrderStatsService
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

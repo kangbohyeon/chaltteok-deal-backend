@@ -21,7 +21,7 @@ import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.enums.OrderErrorCode
-import com.chaltteok.user.stats.service.OrderStatsService
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service

@@ -6,7 +6,6 @@ import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
-import com.chaltteok.core.domain.OrderStats
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.enums.NotificationType
@@ -18,9 +17,9 @@ import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
-import com.chaltteok.core.repository.orderstats.OrderStatsRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.orm.ObjectOptimisticLockingFailureException
@@ -48,7 +47,7 @@ class OrderProcessServiceImpl(
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
     private val applicationEventPublisher: ApplicationEventPublisher,
-    private val orderStatsRepository: OrderStatsRepository,
+    private val orderStatsService: OrderStatsService,
 ) : OrderProcessService {
 
     override fun processOrder(userId: Long, dailyStockId: Long) {
@@ -123,11 +122,8 @@ class OrderProcessServiceImpl(
                 orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
             )
         )
-        val today = LocalDate.now()
-        val stats = orderStatsRepository.findByStatDateWithLock(today)
-            ?: orderStatsRepository.save(OrderStats(statDate = today))
-        stats.orderCount++
-        stats.totalRevenue += totalPrice.toLong()
+
+        orderStatsService.incrementOrderStats(LocalDate.now(), totalPrice.toLong())
         log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
     }
 }
