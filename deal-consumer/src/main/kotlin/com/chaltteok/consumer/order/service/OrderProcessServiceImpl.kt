@@ -11,6 +11,7 @@ import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
+import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.notification.NotificationRepository
@@ -19,9 +20,11 @@ import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger {}
 
@@ -40,6 +43,7 @@ class OrderProcessServiceImpl(
     private val notificationRepository: NotificationRepository,
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) : OrderProcessService {
 
     override fun processOrder(userId: Long, dailyStockId: Long) {
@@ -103,6 +107,17 @@ class OrderProcessServiceImpl(
             )
         )
 
+        applicationEventPublisher.publishEvent(
+            OrderCompletedEvent(
+                orderId = order.id ?: error("Order ID null"),
+                orderNumber = order.orderNumber,
+                userEmail = user.email,
+                userName = user.nickname,
+                productName = dailyStock.product.name,
+                totalAmount = totalPrice.toLong(),
+                orderedAt = order.orderedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+            )
+        )
         log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
     }
 }

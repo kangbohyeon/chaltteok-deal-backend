@@ -14,7 +14,7 @@ class OrderEventConsumer(
     private val orderProcessService: OrderProcessService,
     private val objectMapper: ObjectMapper,
 ) {
-    @KafkaListener(topics = ["deal-order-events"], groupId = "deal-order-group")
+    @KafkaListener(topics = ["deal-order-events"], groupId = "deal-order-group", concurrency = "3")
     fun consume(message: String) {
         try {
             val event = objectMapper.readValue(message, OrderEventDto::class.java)

@@ -17,12 +17,15 @@ import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.enums.OrderErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.format.DateTimeFormatter
 
 private val logger = KotlinLogging.logger {}
 
@@ -35,6 +38,7 @@ class OrderServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
     private val notificationRepository: NotificationRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) : OrderService {
 
     @Transactional
@@ -88,6 +92,17 @@ class OrderServiceImpl(
         logger.info { "타임세일 주문 완료 — stockUuid=${request.stockUuid}, orderNumber=${order.orderNumber}" }
 
         val orderId = order.id ?: error("Order ID가 저장 후에도 null입니다")
+        applicationEventPublisher.publishEvent(
+            OrderCompletedEvent(
+                orderId = orderId,
+                orderNumber = order.orderNumber,
+                userEmail = user.email,
+                userName = user.nickname,
+                productName = dailyStock.product.name,
+                totalAmount = totalPrice.toLong(),
+                orderedAt = order.orderedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+            )
+        )
         return CheckoutResponse(
             orderId = orderId,
             totalAmount = totalPrice.toLong(),
