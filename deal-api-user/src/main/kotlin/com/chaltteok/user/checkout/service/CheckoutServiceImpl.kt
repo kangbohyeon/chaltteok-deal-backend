@@ -17,8 +17,10 @@ import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.checkout.dto.CheckoutRequest
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.checkout.enums.CheckoutErrorCode
+import com.chaltteok.user.stats.service.OrderStatsService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 
 @Service
 class CheckoutServiceImpl(
@@ -28,6 +30,7 @@ class CheckoutServiceImpl(
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
     private val notificationRepository: NotificationRepository,
+    private val orderStatsService: OrderStatsService,
 ) : CheckoutService {
 
     @Transactional
@@ -62,6 +65,11 @@ class CheckoutServiceImpl(
         paymentRepository.save(payment)
 
         savedOrder.status = OrderStatus.COMPLETED
+
+        orderStatsService.incrementOrderStats(
+            date = LocalDate.now(),
+            revenue = request.totalAmount,
+        )
 
         val productNames = orderItems.joinToString(", ") { it.product.name }
             .let { if (it.length > 450) it.take(450) + "…" else it }
