@@ -21,4 +21,11 @@ class KafkaTopicConfig {
             .partitions(3)
             .replicas(1)
             .build()
+
+    @Bean
+    fun orderCancelledEventsTopic(): NewTopic =
+        TopicBuilder.name("order-cancelled-events")
+            .partitions(3)
+            .replicas(1)
+            .build()
 }

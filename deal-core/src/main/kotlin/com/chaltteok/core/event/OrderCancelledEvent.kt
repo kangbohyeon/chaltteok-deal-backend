@@ -1,10 +1,9 @@
 package com.chaltteok.core.event
 
-data class OrderCompletedEvent(
+data class OrderCancelledEvent(
     val orderId: Long,
     val orderNumber: String,
     val userName: String,
-    val productName: String,
     val totalAmount: Long,
-    val orderedAt: String,
+    val cancelledAt: String,
 )
