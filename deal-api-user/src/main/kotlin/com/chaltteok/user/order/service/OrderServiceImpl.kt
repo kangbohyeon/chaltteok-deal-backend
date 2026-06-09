@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.format.DateTimeFormatter
 
 private val logger = KotlinLogging.logger {}
+private val ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
 @Service
 class OrderServiceImpl(
@@ -100,7 +101,7 @@ class OrderServiceImpl(
                 userName = user.nickname,
                 productName = dailyStock.product.name,
                 totalAmount = totalPrice.toLong(),
-                orderedAt = order.orderedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
             )
         )
         return CheckoutResponse(

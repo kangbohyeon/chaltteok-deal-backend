@@ -18,11 +18,13 @@ class OrderCompletedEventPublisher(
 ) {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handle(event: OrderCompletedEvent) {
-        try {
-            kafkaTemplate.send(COMPLETED_TOPIC, event.orderId.toString(), objectMapper.writeValueAsString(event))
-            log.info { "주문완료 이벤트 발행 — orderNumber=${event.orderNumber}" }
-        } catch (ex: Exception) {
-            log.error(ex) { "주문완료 이벤트 발행 실패 — orderNumber=${event.orderNumber}" }
-        }
+        kafkaTemplate.send(COMPLETED_TOPIC, event.orderNumber, objectMapper.writeValueAsString(event))
+            .whenComplete { _, ex ->
+                if (ex != null) {
+                    log.error(ex) { "주문완료 이벤트 발행 실패 — orderNumber=${event.orderNumber}" }
+                } else {
+                    log.info { "주문완료 이벤트 발행 성공 — orderNumber=${event.orderNumber}" }
+                }
+            }
     }
 }

@@ -22,7 +22,8 @@ class OrderEmailConsumer(
     )
     fun consume(message: String) {
         val event = objectMapper.readValue(message, OrderCompletedEvent::class.java)
-        log.info { "주문 확인 이메일 발송 — orderNumber=${event.orderNumber}, to=${event.userEmail}" }
+        val maskedEmail = event.userEmail.replace(Regex("(?<=.{2}).(?=.*@)"), "*")
+        log.info { "주문 확인 이메일 발송 — orderNumber=${event.orderNumber}, to=$maskedEmail" }
         emailService.sendOrderConfirmation(event)
     }
 }

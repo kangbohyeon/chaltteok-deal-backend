@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger {}
+private val ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
 private const val MAX_RETRY = 3
 private const val RETRY_DELAY_MS = 50L
@@ -115,7 +116,7 @@ class OrderProcessServiceImpl(
                 userName = user.nickname,
                 productName = dailyStock.product.name,
                 totalAmount = totalPrice.toLong(),
-                orderedAt = order.orderedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
             )
         )
         log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
