@@ -19,11 +19,13 @@ import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger {}
@@ -45,6 +47,7 @@ class OrderProcessServiceImpl(
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
     private val applicationEventPublisher: ApplicationEventPublisher,
+    private val orderStatsService: OrderStatsService,
 ) : OrderProcessService {
 
     override fun processOrder(userId: Long, dailyStockId: Long) {
@@ -119,6 +122,8 @@ class OrderProcessServiceImpl(
                 orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
             )
         )
+
+        orderStatsService.incrementOrderStats(LocalDate.now(), totalPrice.toLong())
         log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
     }
 }

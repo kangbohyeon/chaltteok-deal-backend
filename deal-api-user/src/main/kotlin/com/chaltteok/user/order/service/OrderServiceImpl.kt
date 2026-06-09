@@ -21,10 +21,12 @@ import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.enums.OrderErrorCode
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 private val logger = KotlinLogging.logger {}
@@ -40,6 +42,7 @@ class OrderServiceImpl(
     private val eventHistoryRepository: EventHistoryRepository,
     private val notificationRepository: NotificationRepository,
     private val applicationEventPublisher: ApplicationEventPublisher,
+    private val orderStatsService: OrderStatsService,
 ) : OrderService {
 
     @Transactional
@@ -104,6 +107,10 @@ class OrderServiceImpl(
                 orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
             )
         )
+        orderStatsService.incrementOrderStats(
+            date = LocalDate.now(),
+            revenue = totalPrice.toLong(),
+        )
         return CheckoutResponse(
             orderId = orderId,
             totalAmount = totalPrice.toLong(),
@@ -124,6 +131,7 @@ class OrderServiceImpl(
         }
 
         order.cancel()
+        orderStatsService.incrementCancelStats(date = LocalDate.now())
 
         val orderIds = listOfNotNull(order.id)
         paymentRepository.findByOrderIds(orderIds).forEach { it.cancel() }
