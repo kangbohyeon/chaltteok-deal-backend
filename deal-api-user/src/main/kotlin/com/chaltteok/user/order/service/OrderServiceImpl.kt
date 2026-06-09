@@ -20,10 +20,8 @@ import com.chaltteok.user.order.enums.OrderErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Pageable
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -93,7 +91,6 @@ class OrderServiceImpl(
             OrderCancelledEvent(
                 orderId = order.id ?: error("Order ID null"),
                 orderNumber = order.orderNumber,
-                userEmail = order.user.email,
                 userName = order.user.nickname,
                 totalAmount = order.totalPrice.toLong(),
                 cancelledAt = LocalDateTime.now().format(CANCEL_DATE_FORMATTER),
@@ -114,12 +111,12 @@ class OrderServiceImpl(
         val orderStatus = status?.let { runCatching { OrderStatus.valueOf(it) }.getOrNull() }
         val from = fromDate?.let {
             try { LocalDate.parse(it) } catch (e: DateTimeParseException) {
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid fromDate format. Expected yyyy-MM-dd")
+                throw BusinessException(OrderErrorCode.INVALID_DATE_FORMAT)
             }
         }
         val to = toDate?.let {
             try { LocalDate.parse(it) } catch (e: DateTimeParseException) {
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid toDate format. Expected yyyy-MM-dd")
+                throw BusinessException(OrderErrorCode.INVALID_DATE_FORMAT)
             }
         }
 

@@ -11,20 +11,20 @@ import org.springframework.web.util.HtmlUtils
 @Service
 class EmailServiceImpl(private val mailSender: JavaMailSender) : EmailService {
 
-    override fun sendOrderConfirmation(event: OrderCompletedEvent) {
+    override fun sendOrderConfirmation(event: OrderCompletedEvent, userEmail: String) {
         val message: MimeMessage = mailSender.createMimeMessage()
         MimeMessageHelper(message, true, "UTF-8").apply {
-            setTo(sanitize(event.userEmail))
+            setTo(sanitize(userEmail))
             setSubject("[찰떡딜] 주문이 완료되었습니다 - ${sanitize(event.orderNumber)}")
             setText(buildConfirmHtml(event), true)
         }
         mailSender.send(message)
     }
 
-    override fun sendOrderCancellation(event: OrderCancelledEvent) {
+    override fun sendOrderCancellation(event: OrderCancelledEvent, userEmail: String) {
         val message: MimeMessage = mailSender.createMimeMessage()
         MimeMessageHelper(message, true, "UTF-8").apply {
-            setTo(sanitize(event.userEmail))
+            setTo(sanitize(userEmail))
             setSubject("[찰떡딜] 주문이 취소되었습니다 - ${sanitize(event.orderNumber)}")
             setText(buildCancellationHtml(event), true)
         }

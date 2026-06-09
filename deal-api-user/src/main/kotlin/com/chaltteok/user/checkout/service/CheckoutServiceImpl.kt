@@ -42,14 +42,12 @@ class CheckoutServiceImpl(
         val user = userRepository.findById(userId)
             .orElseThrow { BusinessException(CheckoutErrorCode.USER_NOT_FOUND) }
 
-        val order = Order(user = user, totalPrice = request.totalAmount.toInt(), status = OrderStatus.PENDING)
-        val savedOrder = orderRepository.save(order)
-
         val productUuids = request.items.map { it.productUuid }
         val productMap = productRepository.findAllByProductUuidInWithLock(productUuids)
             .associateBy { it.productUuid }
 
-        val orderItems = request.items.map { item ->
+        // 서버 측 가격으로 총액 계산 및 재고 차감 (클라이언트 전달 금액 미신뢰)
+        val serverTotal = request.items.sumOf { item ->
             val product = productMap[item.productUuid]
                 ?: throw BusinessException(CheckoutErrorCode.PRODUCT_NOT_FOUND)
             if (product.currentStock != null) {
@@ -59,14 +57,22 @@ class CheckoutServiceImpl(
                 product.currentStock = product.currentStock!! - item.quantity
                 if (product.currentStock == 0) product.isSoldOut = true
             }
-            OrderItem(order = savedOrder, product = product, quantity = item.quantity, price = item.price.toInt())
+            product.price.toLong() * item.quantity
+        }
+
+        val order = Order(user = user, totalPrice = serverTotal.toInt(), status = OrderStatus.PENDING)
+        val savedOrder = orderRepository.save(order)
+
+        val orderItems = request.items.map { item ->
+            val product = productMap[item.productUuid]!!
+            OrderItem(order = savedOrder, product = product, quantity = item.quantity, price = product.price)
         }
         orderItemRepository.saveAll(orderItems)
 
         paymentRepository.save(
             Payment(
                 order = savedOrder,
-                amount = request.totalAmount.toInt(),
+                amount = serverTotal.toInt(),
                 status = PaymentStatus.SUCCESS,
                 paymentMethod = request.paymentMethod,
                 paidAt = LocalDateTime.now(),
@@ -84,10 +90,9 @@ class CheckoutServiceImpl(
             OrderCompletedEvent(
                 orderId = orderId,
                 orderNumber = savedOrder.orderNumber,
-                userEmail = user.email,
                 userName = user.nickname,
                 productName = productName,
-                totalAmount = savedOrder.totalPrice.toLong(),
+                totalAmount = serverTotal,
                 orderedAt = savedOrder.orderedAt.format(ORDER_DATE_FORMATTER),
             )
         )

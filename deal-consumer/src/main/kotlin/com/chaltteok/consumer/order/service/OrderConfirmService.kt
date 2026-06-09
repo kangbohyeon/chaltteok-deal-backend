@@ -55,7 +55,6 @@ class OrderConfirmService(
             OrderCompletedEvent(
                 orderId = order.id ?: error("Order ID null"),
                 orderNumber = order.orderNumber,
-                userEmail = user.email,
                 userName = user.nickname,
                 productName = dailyStock.product.name,
                 totalAmount = totalPrice.toLong(),

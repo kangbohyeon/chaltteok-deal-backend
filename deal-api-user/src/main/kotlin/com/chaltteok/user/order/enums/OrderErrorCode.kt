@@ -16,4 +16,5 @@ enum class OrderErrorCode(
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
     ORDER_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "이미 취소된 주문입니다."),
     ORDER_NOT_CANCELLABLE(HttpStatus.BAD_REQUEST, "취소할 수 없는 주문 상태입니다."),
+    INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "날짜 형식이 올바르지 않습니다. (yyyy-MM-dd)"),
 }

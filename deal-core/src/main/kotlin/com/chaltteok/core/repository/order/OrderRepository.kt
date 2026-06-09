@@ -6,5 +6,6 @@ import java.util.Optional
 
 interface OrderRepository : JpaRepository<Order, Long>, OrderRepositoryCustom {
     fun findByUser_IdOrderByOrderedAtDesc(userId: Long): List<Order>
+    fun findByOrderNumber(orderNumber: String): Order?
     fun findByOrderNumberAndUser_Id(orderNumber: String, userId: Long): Optional<Order>
 }
