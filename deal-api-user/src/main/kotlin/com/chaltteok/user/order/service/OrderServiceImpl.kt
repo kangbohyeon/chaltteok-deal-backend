@@ -23,7 +23,6 @@ import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.enums.OrderErrorCode
 import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -41,8 +40,8 @@ class OrderServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
     private val notificationRepository: NotificationRepository,
-    private val applicationEventPublisher: ApplicationEventPublisher,
     private val orderStatsService: OrderStatsService,
+    private val emailService: EmailService
 ) : OrderService {
 
     @Transactional
@@ -85,6 +84,7 @@ class OrderServiceImpl(
         )
         eventHistoryRepository.save(EventHistory(user = user, dailyStock = dailyStock, order = order))
 
+        val start = System.currentTimeMillis()
         notificationRepository.save(
             Notification(
                 type = NotificationType.ORDER.name,
@@ -96,21 +96,20 @@ class OrderServiceImpl(
         logger.info { "타임세일 주문 완료 — stockUuid=${request.stockUuid}, orderNumber=${order.orderNumber}" }
 
         val orderId = order.id ?: error("Order ID가 저장 후에도 null입니다")
-        applicationEventPublisher.publishEvent(
-            OrderCompletedEvent(
-                orderId = orderId,
-                orderNumber = order.orderNumber,
-                userEmail = user.email,
-                userName = user.nickname,
-                productName = dailyStock.product.name,
-                totalAmount = totalPrice.toLong(),
-                orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
-            )
-        )
+        emailService.sendOrderConfirmation(OrderCompletedEvent(
+            orderId = orderId,
+            orderNumber = order.orderNumber,
+            userEmail = user.email,
+            userName = user.nickname,
+            productName = dailyStock.product.name,
+            totalAmount = totalPrice.toLong(),
+            orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
+        ))
         orderStatsService.incrementOrderStats(
             date = LocalDate.now(),
             revenue = totalPrice.toLong(),
         )
+        logger.info("부가 처리 시간: ${System.currentTimeMillis() - start}ms")
         return CheckoutResponse(
             orderId = orderId,
             totalAmount = totalPrice.toLong(),

@@ -8,6 +8,7 @@ import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.enums.PaymentStatus
+import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
@@ -18,10 +19,14 @@ import com.chaltteok.user.checkout.dto.CheckoutRequest
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.checkout.enums.CheckoutErrorCode
 import com.chaltteok.core.service.orderstats.OrderStatsService
+import com.chaltteok.user.order.service.EmailService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
+private val logger = KotlinLogging.logger {}
 @Service
 class CheckoutServiceImpl(
     private val userRepository: UserRepository,
@@ -31,6 +36,7 @@ class CheckoutServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val notificationRepository: NotificationRepository,
     private val orderStatsService: OrderStatsService,
+    private val emailService: EmailService
 ) : CheckoutService {
 
     @Transactional
@@ -65,7 +71,16 @@ class CheckoutServiceImpl(
         paymentRepository.save(payment)
 
         savedOrder.status = OrderStatus.COMPLETED
-
+        val start = System.currentTimeMillis()
+        emailService.sendOrderConfirmation(OrderCompletedEvent(
+            orderId = savedOrder.id ?: error("Order ID가 저장 후에도 null입니다"),
+            orderNumber = order.orderNumber,
+            userEmail = user.email,
+            userName = user.nickname,
+            productName = NotificationType.ORDER.name,
+            totalAmount = savedOrder.totalPrice.toLong(),
+            orderedAt = order.orderedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+        ))
         orderStatsService.incrementOrderStats(
             date = LocalDate.now(),
             revenue = request.totalAmount,
@@ -80,6 +95,8 @@ class CheckoutServiceImpl(
                 message = "$productNames (%,d원)".format(request.totalAmount),
             )
         )
+
+        logger.info("부가 처리 시간: ${System.currentTimeMillis() - start}ms")
 
         return CheckoutResponse(
             orderId = savedOrder.id!!,
