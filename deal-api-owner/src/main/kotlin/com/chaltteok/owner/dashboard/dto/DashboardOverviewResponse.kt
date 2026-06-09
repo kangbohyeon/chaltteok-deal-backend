@@ -1,11 +1,11 @@
 package com.chaltteok.owner.dashboard.dto
 
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 class DashboardOverviewResponse(
     val period: String,
-    val from: LocalDateTime,
-    val to: LocalDateTime,
+    val from: LocalDate,
+    val to: LocalDate,
     val totalRevenue: Long,
     val orderCount: Long,
     val avgOrderValue: Long,
