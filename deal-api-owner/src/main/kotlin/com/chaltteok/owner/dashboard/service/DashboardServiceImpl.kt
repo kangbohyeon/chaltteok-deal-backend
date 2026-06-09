@@ -25,27 +25,25 @@ class DashboardServiceImpl(
     private val userRepository: UserRepository,
 ) : DashboardService {
 
-    override fun getOverview(period: DashboardPeriod, from: LocalDate?, to: LocalDate?): DashboardOverviewResponse {
-        if (from != null && to != null) {
-            require(!from.isAfter(to)) { "시작일은 종료일보다 이전이어야 합니다." }
-            require(!to.isAfter(LocalDate.now())) { "종료일은 오늘 이전이어야 합니다." }
-            require(!from.isBefore(to.minusDays(365))) { "조회 기간은 최대 365일입니다." }
-        }
+    companion object {
+        private const val MAX_PERIOD_DAYS = 365L
+    }
 
+    override fun getOverview(period: DashboardPeriod, from: LocalDate?, to: LocalDate?): DashboardOverviewResponse {
         val (fromDate, toDate) = if (from != null && to != null) {
+            validateDateRange(from, to)
             Pair(from, to)
         } else {
             resolvePeriodRange(period)
         }
 
-        // tb_order_stats 사전 집계 조회 (날짜별 최대 365건)
         val stats = orderStatsRepository.findAllByStatDateBetween(fromDate, toDate)
-        val orderCount = stats.sumOf { it.orderCount }
-        val totalRevenue = stats.sumOf { it.totalRevenue }
-        val cancelledCount = stats.sumOf { it.cancelledCount }
+        val (orderCount, totalRevenue, cancelledCount) = stats.fold(Triple(0L, 0L, 0L)) { (oc, tr, cc), s ->
+            Triple(oc + s.orderCount, tr + s.totalRevenue, cc + s.cancelledCount)
+        }
         val avgOrderValue = if (orderCount > 0) totalRevenue / orderCount else 0L
 
-        // 신규·재구매 고객은 user 차원 집계 → userRepository 유지
+        // tb_order_stats 미집계 항목 — user 테이블 직접 조회 불가피
         val fromDt = fromDate.atStartOfDay()
         val toDt = toDate.atTime(LocalTime.MAX)
         val newCustomers = userRepository.countNewUsers(fromDt, toDt)
@@ -53,8 +51,8 @@ class DashboardServiceImpl(
 
         return DashboardOverviewResponse(
             period = period.name,
-            from = fromDt,
-            to = toDt,
+            from = fromDate,
+            to = toDate,
             totalRevenue = totalRevenue,
             orderCount = orderCount,
             avgOrderValue = avgOrderValue,
@@ -65,12 +63,12 @@ class DashboardServiceImpl(
     }
 
     override fun getSalesTrend(from: LocalDate, to: LocalDate): SalesTrendResponse {
-        // tb_order_stats 사전 집계 조회 → findDailySalesTrend GROUP BY 쿼리 대체
-        val items = orderStatsRepository.findAllByStatDateBetween(from, to).map { stats ->
+        validateDateRange(from, to)
+        val items = orderStatsRepository.findAllByStatDateBetween(from, to).map { stat ->
             SalesTrendItem(
-                date = stats.statDate,
-                orderCount = stats.orderCount,
-                revenue = stats.totalRevenue,
+                date = stat.statDate,
+                orderCount = stat.orderCount,
+                revenue = stat.totalRevenue,
             )
         }
         return SalesTrendResponse(trend = items)
@@ -96,6 +94,12 @@ class DashboardServiceImpl(
             HourlySalesItem(hour = agg.hour, orderCount = agg.orderCount, revenue = agg.revenue)
         }
         return HourlySalesResponse(date = date, hourlySales = items)
+    }
+
+    private fun validateDateRange(from: LocalDate, to: LocalDate) {
+        require(!from.isAfter(to)) { "시작일은 종료일보다 이전이어야 합니다." }
+        require(!to.isAfter(LocalDate.now())) { "종료일은 오늘 이전이어야 합니다." }
+        require(!from.isBefore(to.minusDays(MAX_PERIOD_DAYS))) { "조회 기간은 최대 ${MAX_PERIOD_DAYS}일입니다." }
     }
 
     private fun resolvePeriodRange(period: DashboardPeriod): Pair<LocalDate, LocalDate> {
