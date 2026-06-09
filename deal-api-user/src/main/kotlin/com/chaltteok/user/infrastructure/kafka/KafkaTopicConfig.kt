@@ -14,4 +14,11 @@ class KafkaTopicConfig {
             .partitions(3)
             .replicas(1)
             .build()
+
+    @Bean
+    fun orderCompletedEventsTopic(): NewTopic =
+        TopicBuilder.name("order-completed-events")
+            .partitions(3)
+            .replicas(1)
+            .build()
 }
