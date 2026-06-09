@@ -3,29 +3,24 @@ package com.chaltteok.consumer.order.service
 import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
 import com.chaltteok.core.domain.DailyStock
-import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.User
-import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
-import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
-import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger {}
@@ -43,11 +38,9 @@ class OrderProcessServiceImpl(
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
-    private val notificationRepository: NotificationRepository,
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
     private val applicationEventPublisher: ApplicationEventPublisher,
-    private val orderStatsService: OrderStatsService,
 ) : OrderProcessService {
 
     override fun processOrder(userId: Long, dailyStockId: Long) {
@@ -95,7 +88,12 @@ class OrderProcessServiceImpl(
             OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE)
+            Payment(
+                order = order,
+                amount = totalPrice,
+                status = PaymentStatus.SUCCESS,
+                paymentMethod = PAYMENT_METHOD_TIMESALE
+            )
         )
 
         // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill
@@ -103,14 +101,7 @@ class OrderProcessServiceImpl(
             it.order = order
         }
 
-        notificationRepository.save(
-            Notification(
-                type = NotificationType.ORDER.name,
-                title = "새 주문이 들어왔습니다",
-                message = "${dailyStock.product.name} (%,d원)".format(dailyStock.salePrice),
-            )
-        )
-
+        // 트랜잭션 커밋 후 이메일·알림·통계를 각 EventListener가 처리
         applicationEventPublisher.publishEvent(
             OrderCompletedEvent(
                 orderId = order.id ?: error("Order ID null"),
@@ -123,7 +114,6 @@ class OrderProcessServiceImpl(
             )
         )
 
-        orderStatsService.incrementOrderStats(LocalDate.now(), totalPrice.toLong())
         log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, dailyStockId=${dailyStock.id}" }
     }
 }
