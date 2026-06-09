@@ -1,10 +1,15 @@
 package com.chaltteok.user.order.controller
 
 import com.chaltteok.common.dto.ResponseDTO
-import com.chaltteok.user.checkout.dto.CheckoutResponse
+import com.chaltteok.user.order.dto.OrderResponse
+import com.chaltteok.user.order.dto.OrderHistoryPageResponse
+import com.chaltteok.user.order.dto.OrderHistoryResponse
 import com.chaltteok.user.order.dto.OrderRequest
 import com.chaltteok.user.order.service.OrderService
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
@@ -14,13 +19,13 @@ class OrderController(
     private val orderService: OrderService,
 ) {
     @PostMapping
-    fun placeOrder(
+    fun placeOrderAsync(
         authentication: Authentication,
         @RequestBody @Valid request: OrderRequest,
-    ): ResponseDTO<CheckoutResponse> {
+    ): ResponseEntity<ResponseDTO<OrderResponse>> {
         val userId = authentication.principal as Long
-        val result = orderService.placeOrder(userId, request)
-        return ResponseDTO.success(result)
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+            .body(ResponseDTO.success(orderService.placeOrder(userId, request)))
     }
 
     @PostMapping("/{orderNumber}/cancel")
@@ -31,5 +36,32 @@ class OrderController(
         val userId = authentication.principal as Long
         orderService.cancelOrder(userId, orderNumber)
         return ResponseDTO.success("주문이 취소되었습니다.")
+    }
+
+    @GetMapping
+    fun getOrderHistory(
+        authentication: Authentication,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") size: Int,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) fromDate: String?,
+        @RequestParam(required = false) toDate: String?,
+        @RequestParam(required = false) paymentStatus: String?,
+    ): ResponseDTO<OrderHistoryPageResponse> {
+        val userId = authentication.principal as Long
+        val pageable = PageRequest.of(page, size.coerceIn(1, 50))
+        return ResponseDTO.success(
+            orderService.getOrderHistory(userId, keyword, status, fromDate, toDate, paymentStatus, pageable)
+        )
+    }
+
+    @GetMapping("/{orderNumber}")
+    fun getOrderDetail(
+        authentication: Authentication,
+        @PathVariable orderNumber: String,
+    ): ResponseDTO<OrderHistoryResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(orderService.getOrderDetail(userId, orderNumber))
     }
 }

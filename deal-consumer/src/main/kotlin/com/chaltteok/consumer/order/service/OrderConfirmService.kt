@@ -16,6 +16,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger {}
@@ -41,7 +42,7 @@ class OrderConfirmService(
             OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE)
+            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE, paidAt = LocalDateTime.now())
         )
 
         // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill

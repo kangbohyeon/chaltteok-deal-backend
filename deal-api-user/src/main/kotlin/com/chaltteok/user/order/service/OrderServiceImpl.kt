@@ -1,55 +1,51 @@
 package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
-import com.chaltteok.core.domain.EventHistory
-import com.chaltteok.core.domain.Notification
-import com.chaltteok.core.domain.Order
-import com.chaltteok.core.domain.OrderItem
-import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.enums.DailyStockStatus
-import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
-import com.chaltteok.core.domain.enums.PaymentStatus
+import com.chaltteok.core.event.OrderCancelledEvent
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
-import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
-import com.chaltteok.core.repository.user.UserRepository
-import com.chaltteok.core.event.OrderCompletedEvent
-import com.chaltteok.user.checkout.dto.CheckoutResponse
+import com.chaltteok.user.infrastructure.kafka.OrderEventProducer
+import com.chaltteok.user.order.dto.OrderHistoryItemResponse
+import com.chaltteok.user.order.dto.OrderHistoryPageResponse
+import com.chaltteok.user.order.dto.OrderHistoryResponse
 import com.chaltteok.user.order.dto.OrderRequest
+import com.chaltteok.user.order.dto.OrderResponse
+import com.chaltteok.user.order.dto.PaymentInfoResponse
 import com.chaltteok.user.order.enums.OrderErrorCode
-import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.data.domain.Pageable
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 private val logger = KotlinLogging.logger {}
-private val ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+private val CANCEL_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
 @Service
 class OrderServiceImpl(
-    private val userRepository: UserRepository,
     private val dailyStockRepository: DailyStockRepository,
+    private val eventHistoryRepository: EventHistoryRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
-    private val eventHistoryRepository: EventHistoryRepository,
-    private val notificationRepository: NotificationRepository,
-    private val orderStatsService: OrderStatsService,
-    private val emailService: EmailService
+    private val orderEventProducer: OrderEventProducer,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) : OrderService {
 
-    @Transactional
-    override fun placeOrder(userId: Long, request: OrderRequest): CheckoutResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { BusinessException(OrderErrorCode.USER_NOT_FOUND) }
-
-        val dailyStock = dailyStockRepository.findByStockUuidWithLock(request.stockUuid)
+    @Transactional(readOnly = true)
+    override fun placeOrder(userId: Long, request: OrderRequest): OrderResponse {
+        val dailyStock = dailyStockRepository.findByStockUuid(request.stockUuid)
             ?: throw BusinessException(OrderErrorCode.DAILY_STOCK_NOT_FOUND)
 
         if (dailyStock.status != DailyStockStatus.OPEN) {
@@ -61,60 +57,18 @@ class OrderServiceImpl(
 
         val maxPurchaseCount = dailyStock.maxPurchaseCount
         if (maxPurchaseCount != null) {
-            val participationCount = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
-            if (participationCount + request.quantity > maxPurchaseCount) {
-                if (participationCount == 0L) {
-                    throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
-                }
+            val participated = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
+            if (participated + request.quantity > maxPurchaseCount) {
+                if (participated == 0L) throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
                 throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
             }
         }
 
-        dailyStock.decrease(request.quantity)
+        val dailyStockId = dailyStock.id ?: error("DailyStock ID가 null입니다")
+        orderEventProducer.sendOrderEvent(userId, dailyStockId)
+        logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId" }
 
-        val totalPrice = dailyStock.salePrice * request.quantity
-        val order = orderRepository.save(
-            Order(user = user, totalPrice = totalPrice, status = OrderStatus.COMPLETED)
-        )
-        orderItemRepository.save(
-            OrderItem(order = order, product = dailyStock.product, quantity = request.quantity, price = dailyStock.salePrice)
-        )
-        paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = "TIMESALE")
-        )
-        eventHistoryRepository.save(EventHistory(user = user, dailyStock = dailyStock, order = order))
-
-        val start = System.currentTimeMillis()
-        notificationRepository.save(
-            Notification(
-                type = NotificationType.ORDER.name,
-                title = "새 주문이 들어왔습니다",
-                message = "${dailyStock.product.name} (%,d원)".format(dailyStock.salePrice),
-            )
-        )
-
-        logger.info { "타임세일 주문 완료 — stockUuid=${request.stockUuid}, orderNumber=${order.orderNumber}" }
-
-        val orderId = order.id ?: error("Order ID가 저장 후에도 null입니다")
-        emailService.sendOrderConfirmation(OrderCompletedEvent(
-            orderId = orderId,
-            orderNumber = order.orderNumber,
-            userEmail = user.email,
-            userName = user.nickname,
-            productName = dailyStock.product.name,
-            totalAmount = totalPrice.toLong(),
-            orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
-        ))
-        orderStatsService.incrementOrderStats(
-            date = LocalDate.now(),
-            revenue = totalPrice.toLong(),
-        )
-        logger.info("부가 처리 시간: ${System.currentTimeMillis() - start}ms")
-        return CheckoutResponse(
-            orderId = orderId,
-            totalAmount = totalPrice.toLong(),
-            status = order.status.name,
-        )
+        return OrderResponse.pending()
     }
 
     @Transactional
@@ -130,9 +84,128 @@ class OrderServiceImpl(
         }
 
         order.cancel()
-        orderStatsService.incrementCancelStats(date = LocalDate.now())
 
         val orderIds = listOfNotNull(order.id)
         paymentRepository.findByOrderIds(orderIds).forEach { it.cancel() }
+
+        // 트랜잭션 커밋 후 이메일·알림·통계를 각 Consumer가 처리
+        applicationEventPublisher.publishEvent(
+            OrderCancelledEvent(
+                orderId = order.id ?: error("Order ID null"),
+                orderNumber = order.orderNumber,
+                userEmail = order.user.email,
+                userName = order.user.nickname,
+                totalAmount = order.totalPrice.toLong(),
+                cancelledAt = LocalDateTime.now().format(CANCEL_DATE_FORMATTER),
+            )
+        )
+    }
+
+    @Transactional(readOnly = true)
+    override fun getOrderHistory(
+        userId: Long,
+        keyword: String?,
+        status: String?,
+        fromDate: String?,
+        toDate: String?,
+        paymentStatus: String?,
+        pageable: Pageable,
+    ): OrderHistoryPageResponse {
+        val orderStatus = status?.let { runCatching { OrderStatus.valueOf(it) }.getOrNull() }
+        val from = fromDate?.let {
+            try { LocalDate.parse(it) } catch (e: DateTimeParseException) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid fromDate format. Expected yyyy-MM-dd")
+            }
+        }
+        val to = toDate?.let {
+            try { LocalDate.parse(it) } catch (e: DateTimeParseException) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid toDate format. Expected yyyy-MM-dd")
+            }
+        }
+
+        val page = orderRepository.findByUserIdPaged(userId, keyword, orderStatus, from, to, paymentStatus, pageable)
+        val orders = page.content
+        if (orders.isEmpty()) {
+            return OrderHistoryPageResponse(
+                content = emptyList(),
+                totalElements = page.totalElements,
+                totalPages = page.totalPages,
+                currentPage = pageable.pageNumber,
+                pageSize = pageable.pageSize,
+            )
+        }
+
+        val orderIds = orders.mapNotNull { it.id }
+        val itemsByOrderId = orderItemRepository.findByOrderIdsWithProduct(orderIds).groupBy { it.order?.id }
+        val paymentByOrderId = paymentRepository.findByOrderIds(orderIds).associateBy { it.order.id }
+
+        val content = orders.map { order ->
+            val items = itemsByOrderId[order.id].orEmpty().map { item ->
+                OrderHistoryItemResponse(
+                    productName = item.product.name,
+                    quantity = item.quantity,
+                    price = item.price.toLong(),
+                )
+            }
+            val payment = paymentByOrderId[order.id]?.let { p ->
+                PaymentInfoResponse(
+                    amount = p.amount,
+                    pgProvider = p.pgProvider,
+                    paymentMethod = p.paymentMethod,
+                    status = p.status.name,
+                    paidAt = p.paidAt?.toString(),
+                )
+            }
+            OrderHistoryResponse(
+                orderNumber = order.orderNumber,
+                totalPrice = order.totalPrice.toLong(),
+                status = order.status.name,
+                orderedAt = order.orderedAt.toString(),
+                items = items,
+                payment = payment,
+                canCancel = order.isCancellable(),
+            )
+        }
+
+        return OrderHistoryPageResponse(
+            content = content,
+            totalElements = page.totalElements,
+            totalPages = page.totalPages,
+            currentPage = page.number,
+            pageSize = page.size,
+        )
+    }
+
+    @Transactional(readOnly = true)
+    override fun getOrderDetail(userId: Long, orderNumber: String): OrderHistoryResponse {
+        val order = orderRepository.findByOrderNumberAndUser_Id(orderNumber, userId)
+            .orElseThrow { BusinessException(OrderErrorCode.ORDER_NOT_FOUND) }
+
+        val orderIds = listOfNotNull(order.id)
+        val items = orderItemRepository.findByOrderIdsWithProduct(orderIds).map { item ->
+            OrderHistoryItemResponse(
+                productName = item.product.name,
+                quantity = item.quantity,
+                price = item.price.toLong(),
+            )
+        }
+        val payment = paymentRepository.findByOrderIds(orderIds).firstOrNull()?.let { p ->
+            PaymentInfoResponse(
+                amount = p.amount,
+                pgProvider = p.pgProvider,
+                paymentMethod = p.paymentMethod,
+                status = p.status.name,
+                paidAt = p.paidAt?.toString(),
+            )
+        }
+        return OrderHistoryResponse(
+            orderNumber = order.orderNumber,
+            totalPrice = order.totalPrice.toLong(),
+            status = order.status.name,
+            orderedAt = order.orderedAt.toString(),
+            items = items,
+            payment = payment,
+            canCancel = order.isCancellable(),
+        )
     }
 }
