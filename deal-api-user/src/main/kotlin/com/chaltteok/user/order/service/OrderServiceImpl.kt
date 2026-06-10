@@ -62,7 +62,7 @@ class OrderServiceImpl(
         }
 
         val dailyStockId = dailyStock.id ?: error("DailyStock ID가 null입니다")
-        orderEventProducer.sendOrderEvent(userId, dailyStockId)
+        orderEventProducer.sendOrderEvent(userId, dailyStockId, request.paymentMethod)
         logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId" }
 
         return OrderResponse.pending()

@@ -2,6 +2,7 @@ package com.chaltteok.consumer.order.service
 
 import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
+import com.chaltteok.core.domain.enums.PaymentMethod
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.user.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -22,7 +23,7 @@ class OrderProcessServiceImpl(
     private val orderConfirmService: OrderConfirmService,
 ) : OrderProcessService {
 
-    override fun processOrder(userId: Long, dailyStockId: Long) {
+    override fun processOrder(userId: Long, dailyStockId: Long, paymentMethod: PaymentMethod) {
         val user = userRepository.findById(userId)
             .orElseThrow { RuntimeException("User not found: $userId") }
         val dailyStock = dailyStockRepository.findById(dailyStockId)
@@ -54,6 +55,6 @@ class OrderProcessServiceImpl(
         }
 
         // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용
-        orderConfirmService.confirmOrder(user, dailyStock)
+        orderConfirmService.confirmOrder(user, dailyStock, paymentMethod)
     }
 }
