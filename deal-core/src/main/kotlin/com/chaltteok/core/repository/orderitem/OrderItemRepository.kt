@@ -9,5 +9,8 @@ interface OrderItemRepository : JpaRepository<OrderItem, Long>, OrderItemReposit
     @Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.product WHERE oi.order.id IN :orderIds")
     fun findByOrderIdsWithProduct(@Param("orderIds") orderIds: List<Long>): List<OrderItem>
 
+    @Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.product WHERE oi.order.id = :orderId")
+    fun findByOrderIdWithProduct(@Param("orderId") orderId: Long): List<OrderItem>
+
     fun existsByProductId(productId: Long): Boolean
 }

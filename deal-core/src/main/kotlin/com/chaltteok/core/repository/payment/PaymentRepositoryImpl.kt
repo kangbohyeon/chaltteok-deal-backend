@@ -17,4 +17,7 @@ class PaymentRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Paym
             .where(qPayment.order.id.`in`(orderIds))
             .fetch()
     }
+
+    override fun findByOrderId(orderId: Long): Payment? =
+        jpaQueryFactory.selectFrom(qPayment).where(qPayment.order.id.eq(orderId)).fetchOne()
 }

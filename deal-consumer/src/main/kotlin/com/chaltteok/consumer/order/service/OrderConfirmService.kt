@@ -3,24 +3,23 @@ package com.chaltteok.consumer.order.service
 import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
+import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
+import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger {}
-private val ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 private const val PAYMENT_METHOD_TIMESALE = "TIMESALE"
 
 @Service
@@ -29,7 +28,7 @@ class OrderConfirmService(
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
-    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val outboxEventWriter: OutboxEventWriter,
 ) {
     @Transactional
     fun confirmOrder(user: User, dailyStock: DailyStock) {
@@ -50,15 +49,17 @@ class OrderConfirmService(
             it.order = order
         }
 
-        // 트랜잭션 커밋 후 이메일·알림·통계를 각 EventListener가 처리
-        applicationEventPublisher.publishEvent(
-            OrderCompletedEvent(
+        outboxEventWriter.write(
+            source = OutboxEvent.SOURCE_CONSUMER,
+            aggregateId = order.orderNumber,
+            eventType = OutboxEvent.TYPE_ORDER_COMPLETED,
+            event = OrderCompletedEvent(
                 orderId = order.id ?: error("Order ID null"),
                 orderNumber = order.orderNumber,
                 userName = user.nickname,
                 productName = dailyStock.product.name,
                 totalAmount = totalPrice.toLong(),
-                orderedAt = order.orderedAt.format(ORDER_DATE_FORMATTER),
+                orderedAt = order.orderedAt,
             )
         )
 

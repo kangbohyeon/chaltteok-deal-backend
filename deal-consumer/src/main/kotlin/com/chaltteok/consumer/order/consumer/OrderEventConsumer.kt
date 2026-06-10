@@ -15,7 +15,7 @@ class OrderEventConsumer(
     private val objectMapper: ObjectMapper,
 ) {
     // try-catch 없음 — KafkaConfig.kafkaListenerContainerFactory의 DLQ 핸들러가 3회 재시도 후 .DLT로 이동
-    @KafkaListener(topics = ["deal-order-events"], groupId = "deal-order-group", concurrency = "3")
+    @KafkaListener(topics = ["deal-order-events"], groupId = "deal-order-group", concurrency = "3", containerFactory = "kafkaListenerContainerFactory")
     fun consume(message: String) {
         val event = objectMapper.readValue(message, OrderEventDto::class.java)
         log.info { "주문 이벤트 수신 — userId=${event.userId}, dailyStockId=${event.dailyStockId}" }
