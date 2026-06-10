@@ -5,6 +5,7 @@ import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.repository.outbox.OutboxEventRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.data.domain.PageRequest
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -15,10 +16,9 @@ private val log = KotlinLogging.logger {}
 
 abstract class AbstractOutboxPublisherJob(
     private val outboxEventRepository: OutboxEventRepository,
+    private val kafkaTemplate: KafkaTemplate<String, String>,
 ) {
     abstract val source: String
-
-    protected abstract fun sendToKafka(topic: String, key: String, payload: String): CompletableFuture<*>
 
     @Scheduled(fixedDelayString = "\${outbox.publisher.delay-ms:3000}")
     @Transactional
@@ -30,33 +30,37 @@ abstract class AbstractOutboxPublisherJob(
         )
         if (events.isEmpty()) return
 
-        // Phase 1: 전체 전송 동시 시작 (직렬 블로킹 제거)
+        // Phase 1: 전체 전송 동시 시작, 건당 5초 타임아웃 부여
         val futures = events.mapNotNull { event ->
             val topic = KafkaTopics.OUTBOX_TOPIC_MAP[event.eventType]
             if (topic == null) {
                 log.error { "알 수 없는 eventType — id=${event.id}, type=${event.eventType}" }
                 return@mapNotNull null
             }
-            event to sendToKafka(topic, event.aggregateId, event.payload)
+            event to (kafkaTemplate.send(topic, event.aggregateId, event.payload)
+                .orTimeout(5, TimeUnit.SECONDS) as CompletableFuture<*>)
         }
 
-        // Phase 2: 결과 수집 (전체 대기 최대 5초)
+        // Phase 2: 전체 최대 5초 내 완료 대기 (직렬 블로킹 제거 — 최악 100×5s → 5s)
+        CompletableFuture.allOf(*futures.map { it.second }.toTypedArray())
+            .exceptionally { null }
+            .join()
+
+        // Phase 3: 결과 수집 및 Bulk UPDATE (DB 라운드트립 최대 3회)
         val processedIds = mutableListOf<Long>()
         val retryIds = mutableListOf<Long>()
         val failedIds = mutableListOf<Long>()
 
         futures.forEach { (event, future) ->
-            try {
-                future.get(5, TimeUnit.SECONDS)
-                processedIds += event.id!!
-            } catch (ex: Exception) {
-                log.warn(ex) { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=${event.id}, type=${event.eventType}" }
+            if (future.isCompletedExceptionally) {
+                log.warn { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=${event.id}, type=${event.eventType}" }
                 if (event.retryCount + 1 >= MAX_RETRIES) failedIds += event.id!!
                 else retryIds += event.id!!
+            } else {
+                processedIds += event.id!!
             }
         }
 
-        // Phase 3: Bulk UPDATE (개별 dirty-check UPDATE 제거, DB 라운드트립 최대 3회)
         val now = LocalDateTime.now()
         if (processedIds.isNotEmpty()) outboxEventRepository.markProcessed(processedIds, now)
         if (retryIds.isNotEmpty()) outboxEventRepository.incrementRetry(retryIds)
