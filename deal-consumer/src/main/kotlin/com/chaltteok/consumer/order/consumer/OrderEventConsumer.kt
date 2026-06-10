@@ -1,7 +1,7 @@
 package com.chaltteok.consumer.order.consumer
 
-import com.chaltteok.consumer.order.dto.OrderEventDto
 import com.chaltteok.consumer.order.service.OrderProcessService
+import com.chaltteok.core.event.OrderPlacedEvent
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
@@ -17,7 +17,7 @@ class OrderEventConsumer(
     // try-catch 없음 — KafkaConfig.kafkaListenerContainerFactory의 DLQ 핸들러가 3회 재시도 후 .DLT로 이동
     @KafkaListener(topics = ["deal-order-events"], groupId = "deal-order-group", concurrency = "3", containerFactory = "kafkaListenerContainerFactory")
     fun consume(message: String) {
-        val event = objectMapper.readValue(message, OrderEventDto::class.java)
+        val event = objectMapper.readValue(message, OrderPlacedEvent::class.java)
         log.info { "주문 이벤트 수신 — userId=${event.userId}, dailyStockId=${event.dailyStockId}" }
         orderProcessService.processOrder(event.userId, event.dailyStockId, event.paymentMethod)
     }

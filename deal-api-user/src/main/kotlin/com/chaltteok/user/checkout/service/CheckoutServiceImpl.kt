@@ -73,7 +73,7 @@ class CheckoutServiceImpl(
                 order = savedOrder,
                 amount = serverTotal.toInt(),
                 status = PaymentStatus.SUCCESS,
-                paymentMethod = request.paymentMethod,
+                paymentMethod = request.paymentMethod.name,
                 paidAt = LocalDateTime.now(),
             )
         )

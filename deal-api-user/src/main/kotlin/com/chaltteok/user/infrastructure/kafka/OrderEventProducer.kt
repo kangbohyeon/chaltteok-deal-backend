@@ -1,5 +1,7 @@
 package com.chaltteok.user.infrastructure.kafka
 
+import com.chaltteok.core.domain.enums.PaymentMethod
+import com.chaltteok.core.event.OrderPlacedEvent
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.core.KafkaTemplate
@@ -14,9 +16,9 @@ class OrderEventProducer(
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper,
 ) {
-    fun sendOrderEvent(userId: Long, dailyStockId: Long, paymentMethod: String) {
+    fun sendOrderEvent(userId: Long, dailyStockId: Long, paymentMethod: PaymentMethod) {
         val payload = objectMapper.writeValueAsString(
-            mapOf("userId" to userId, "dailyStockId" to dailyStockId, "paymentMethod" to paymentMethod)
+            OrderPlacedEvent(userId = userId, dailyStockId = dailyStockId, paymentMethod = paymentMethod)
         )
         kafkaTemplate.send(TOPIC, userId.toString(), payload)
             .whenComplete { result, ex ->

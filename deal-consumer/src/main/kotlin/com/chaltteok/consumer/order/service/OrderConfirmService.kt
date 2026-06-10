@@ -7,6 +7,7 @@ import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.enums.OrderStatus
+import com.chaltteok.core.domain.enums.PaymentMethod
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
@@ -30,7 +31,7 @@ class OrderConfirmService(
     private val outboxEventWriter: OutboxEventWriter,
 ) {
     @Transactional
-    fun confirmOrder(user: User, dailyStock: DailyStock, paymentMethod: String) {
+    fun confirmOrder(user: User, dailyStock: DailyStock, paymentMethod: PaymentMethod) {
         val totalPrice = dailyStock.salePrice
 
         val order = orderRepository.save(
@@ -40,7 +41,7 @@ class OrderConfirmService(
             OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = paymentMethod, paidAt = LocalDateTime.now())
+            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = paymentMethod.name, paidAt = LocalDateTime.now())
         )
 
         // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill
