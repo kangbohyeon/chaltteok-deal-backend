@@ -50,9 +50,10 @@ class OrderController(
         @RequestParam(required = false) paymentStatus: String?,
     ): ResponseDTO<OrderHistoryPageResponse> {
         val userId = authentication.principal as Long
-        val pageable = PageRequest.of(page.coerceIn(0, 9_999), size.coerceIn(1, 50))
+        val safeKeyword = keyword?.trim()?.take(100)
+        val pageable = PageRequest.of(page.coerceIn(0, MAX_PAGE), size.coerceIn(1, 50))
         return ResponseDTO.success(
-            orderService.getOrderHistory(userId, keyword, status, fromDate, toDate, paymentStatus, pageable)
+            orderService.getOrderHistory(userId, safeKeyword, status, fromDate, toDate, paymentStatus, pageable)
         )
     }
 
@@ -63,5 +64,9 @@ class OrderController(
     ): ResponseDTO<OrderHistoryResponse> {
         val userId = authentication.principal as Long
         return ResponseDTO.success(orderService.getOrderDetail(userId, orderNumber))
+    }
+
+    companion object {
+        private const val MAX_PAGE = 9_999
     }
 }

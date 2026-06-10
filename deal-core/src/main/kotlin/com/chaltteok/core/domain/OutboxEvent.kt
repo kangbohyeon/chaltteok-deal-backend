@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 
 @Entity
 @Table(
-    name = "outbox_events",
+    name = "tb_outbox_events",
     indexes = [
         Index(name = "idx_outbox_source_status_created", columnList = "source,status,created_at"),
     ],
