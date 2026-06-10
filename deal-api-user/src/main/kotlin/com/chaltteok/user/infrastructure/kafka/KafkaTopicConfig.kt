@@ -28,4 +28,16 @@ class KafkaTopicConfig {
             .partitions(3)
             .replicas(1)
             .build()
+
+    @Bean
+    fun orderCompletedEventsDltTopic(): NewTopic =
+        TopicBuilder.name("order-completed-events.DLT").partitions(3).replicas(1).build()
+
+    @Bean
+    fun orderCancelledEventsDltTopic(): NewTopic =
+        TopicBuilder.name("order-cancelled-events.DLT").partitions(3).replicas(1).build()
+
+    @Bean
+    fun dealOrderEventsDltTopic(): NewTopic =
+        TopicBuilder.name("deal-order-events.DLT").partitions(3).replicas(1).build()
 }

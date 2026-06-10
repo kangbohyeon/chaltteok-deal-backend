@@ -50,7 +50,7 @@ class OrderController(
         @RequestParam(required = false) paymentStatus: String?,
     ): ResponseDTO<OrderHistoryPageResponse> {
         val userId = authentication.principal as Long
-        val pageable = PageRequest.of(page, size.coerceIn(1, 50))
+        val pageable = PageRequest.of(page.coerceIn(0, 9_999), size.coerceIn(1, 50))
         return ResponseDTO.success(
             orderService.getOrderHistory(userId, keyword, status, fromDate, toDate, paymentStatus, pageable)
         )

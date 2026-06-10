@@ -1,9 +1,11 @@
 package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.enums.DailyStockStatus
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.event.OrderCancelledEvent
+import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.order.OrderRepository
@@ -18,17 +20,14 @@ import com.chaltteok.user.order.dto.OrderResponse
 import com.chaltteok.user.order.dto.PaymentInfoResponse
 import com.chaltteok.user.order.enums.OrderErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 private val logger = KotlinLogging.logger {}
-private val CANCEL_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
 @Service
 class OrderServiceImpl(
@@ -38,7 +37,7 @@ class OrderServiceImpl(
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
     private val orderEventProducer: OrderEventProducer,
-    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val outboxEventWriter: OutboxEventWriter,
 ) : OrderService {
 
     @Transactional(readOnly = true)
@@ -83,17 +82,18 @@ class OrderServiceImpl(
 
         order.cancel()
 
-        val orderIds = listOfNotNull(order.id)
-        paymentRepository.findByOrderIds(orderIds).forEach { it.cancel() }
+        paymentRepository.findByOrderId(order.id ?: error("Order ID null"))?.cancel()
 
-        // 트랜잭션 커밋 후 이메일·알림·통계를 각 Consumer가 처리
-        applicationEventPublisher.publishEvent(
-            OrderCancelledEvent(
+        outboxEventWriter.write(
+            source = OutboxEvent.SOURCE_API_USER,
+            aggregateId = order.orderNumber,
+            eventType = OutboxEvent.TYPE_ORDER_CANCELLED,
+            event = OrderCancelledEvent(
                 orderId = order.id ?: error("Order ID null"),
                 orderNumber = order.orderNumber,
                 userName = order.user.nickname,
                 totalAmount = order.totalPrice.toLong(),
-                cancelledAt = LocalDateTime.now().format(CANCEL_DATE_FORMATTER),
+                cancelledAt = LocalDateTime.now(),
             )
         )
     }
@@ -178,15 +178,14 @@ class OrderServiceImpl(
         val order = orderRepository.findByOrderNumberAndUser_Id(orderNumber, userId)
             .orElseThrow { BusinessException(OrderErrorCode.ORDER_NOT_FOUND) }
 
-        val orderIds = listOfNotNull(order.id)
-        val items = orderItemRepository.findByOrderIdsWithProduct(orderIds).map { item ->
+        val items = orderItemRepository.findByOrderIdWithProduct(order.id ?: error("Order ID null")).map { item ->
             OrderHistoryItemResponse(
                 productName = item.product.name,
                 quantity = item.quantity,
                 price = item.price.toLong(),
             )
         }
-        val payment = paymentRepository.findByOrderIds(orderIds).firstOrNull()?.let { p ->
+        val payment = paymentRepository.findByOrderId(order.id ?: error("Order ID null"))?.let { p ->
             PaymentInfoResponse(
                 amount = p.amount,
                 pgProvider = p.pgProvider,

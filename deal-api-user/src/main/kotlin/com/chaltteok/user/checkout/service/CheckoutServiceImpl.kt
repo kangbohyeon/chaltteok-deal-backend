@@ -3,10 +3,12 @@ package com.chaltteok.user.checkout.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
+import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
+import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -16,14 +18,11 @@ import com.chaltteok.user.checkout.dto.CheckoutRequest
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.checkout.enums.CheckoutErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 private val logger = KotlinLogging.logger {}
-private val ORDER_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
 @Service
 class CheckoutServiceImpl(
@@ -32,7 +31,7 @@ class CheckoutServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
-    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val outboxEventWriter: OutboxEventWriter,
 ) : CheckoutService {
 
     @Transactional
@@ -85,15 +84,17 @@ class CheckoutServiceImpl(
         val productName = orderItems.joinToString(", ") { it.product.name }
             .let { if (it.length > 450) it.take(450) + "…" else it }
 
-        // 트랜잭션 커밋 후 이메일·알림·통계를 각 EventListener가 처리
-        applicationEventPublisher.publishEvent(
-            OrderCompletedEvent(
+        outboxEventWriter.write(
+            source = OutboxEvent.SOURCE_API_USER,
+            aggregateId = savedOrder.orderNumber,
+            eventType = OutboxEvent.TYPE_ORDER_COMPLETED,
+            event = OrderCompletedEvent(
                 orderId = orderId,
                 orderNumber = savedOrder.orderNumber,
                 userName = user.nickname,
                 productName = productName,
                 totalAmount = serverTotal,
-                orderedAt = savedOrder.orderedAt.format(ORDER_DATE_FORMATTER),
+                orderedAt = savedOrder.orderedAt,
             )
         )
 

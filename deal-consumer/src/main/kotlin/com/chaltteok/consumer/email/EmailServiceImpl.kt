@@ -1,5 +1,6 @@
 package com.chaltteok.consumer.email
 
+import com.chaltteok.core.common.OrderEventFormatters
 import com.chaltteok.core.event.OrderCancelledEvent
 import com.chaltteok.core.event.OrderCompletedEvent
 import jakarta.mail.internet.MimeMessage
@@ -40,7 +41,7 @@ class EmailServiceImpl(private val mailSender: JavaMailSender) : EmailService {
         val safeProduct = HtmlUtils.htmlEscape(event.productName)
         val safeOrderNumber = HtmlUtils.htmlEscape(event.orderNumber)
         val safeAmount = "%,d".format(event.totalAmount)
-        val safeOrderedAt = HtmlUtils.htmlEscape(event.orderedAt)
+        val safeOrderedAt = HtmlUtils.htmlEscape(event.orderedAt.format(OrderEventFormatters.DISPLAY))
 
         return """
             <!DOCTYPE html>
@@ -80,7 +81,7 @@ class EmailServiceImpl(private val mailSender: JavaMailSender) : EmailService {
         val safeName = HtmlUtils.htmlEscape(event.userName)
         val safeOrderNumber = HtmlUtils.htmlEscape(event.orderNumber)
         val safeAmount = "%,d".format(event.totalAmount)
-        val safeCancelledAt = HtmlUtils.htmlEscape(event.cancelledAt)
+        val safeCancelledAt = HtmlUtils.htmlEscape(event.cancelledAt.format(OrderEventFormatters.DISPLAY))
 
         return """
             <!DOCTYPE html>
