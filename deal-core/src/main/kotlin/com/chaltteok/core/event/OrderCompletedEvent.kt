@@ -11,4 +11,4 @@ data class OrderCompletedEvent(
     val totalAmount: Long,
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     val orderedAt: LocalDateTime,
-)
+) : DomainEvent

@@ -10,4 +10,4 @@ data class OrderCancelledEvent(
     val totalAmount: Long,
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     val cancelledAt: LocalDateTime,
-)
+) : DomainEvent
