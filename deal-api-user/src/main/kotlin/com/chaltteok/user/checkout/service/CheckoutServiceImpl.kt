@@ -81,8 +81,15 @@ class CheckoutServiceImpl(
         savedOrder.status = OrderStatus.COMPLETED
 
         val orderId = savedOrder.id ?: error("Order ID가 저장 후에도 null입니다")
-        val productName = orderItems.joinToString(", ") { it.product.name }
-            .let { if (it.length > 450) it.take(450) + "…" else it }
+        val productName = buildString {
+            for ((index, item) in orderItems.withIndex()) {
+                if (index > 0) append(", ")
+                if (length + item.product.name.length > 450) {
+                    append("…"); break
+                }
+                append(item.product.name)
+            }
+        }
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,

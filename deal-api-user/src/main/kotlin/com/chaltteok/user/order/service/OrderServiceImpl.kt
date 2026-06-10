@@ -82,14 +82,15 @@ class OrderServiceImpl(
 
         order.cancel()
 
-        paymentRepository.findByOrderId(order.id ?: error("Order ID null"))?.cancel()
+        val orderId = order.id ?: error("Order ID null")
+        paymentRepository.findByOrderId(orderId)?.cancel()
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
             aggregateId = order.orderNumber,
             eventType = OutboxEvent.TYPE_ORDER_CANCELLED,
             event = OrderCancelledEvent(
-                orderId = order.id ?: error("Order ID null"),
+                orderId = orderId,
                 orderNumber = order.orderNumber,
                 userName = order.user.nickname,
                 totalAmount = order.totalPrice.toLong(),
@@ -178,14 +179,15 @@ class OrderServiceImpl(
         val order = orderRepository.findByOrderNumberAndUser_Id(orderNumber, userId)
             .orElseThrow { BusinessException(OrderErrorCode.ORDER_NOT_FOUND) }
 
-        val items = orderItemRepository.findByOrderIdWithProduct(order.id ?: error("Order ID null")).map { item ->
+        val orderId = order.id ?: error("Order ID null")
+        val items = orderItemRepository.findByOrderIdWithProduct(orderId).map { item ->
             OrderHistoryItemResponse(
                 productName = item.product.name,
                 quantity = item.quantity,
                 price = item.price.toLong(),
             )
         }
-        val payment = paymentRepository.findByOrderId(order.id ?: error("Order ID null"))?.let { p ->
+        val payment = paymentRepository.findByOrderId(orderId)?.let { p ->
             PaymentInfoResponse(
                 amount = p.amount,
                 pgProvider = p.pgProvider,
