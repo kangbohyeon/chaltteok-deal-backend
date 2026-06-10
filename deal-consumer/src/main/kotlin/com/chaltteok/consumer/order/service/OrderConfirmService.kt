@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 private val log = KotlinLogging.logger {}
-private const val PAYMENT_METHOD_TIMESALE = "TIMESALE"
 
 @Service
 class OrderConfirmService(
@@ -31,7 +30,7 @@ class OrderConfirmService(
     private val outboxEventWriter: OutboxEventWriter,
 ) {
     @Transactional
-    fun confirmOrder(user: User, dailyStock: DailyStock) {
+    fun confirmOrder(user: User, dailyStock: DailyStock, paymentMethod: String) {
         val totalPrice = dailyStock.salePrice
 
         val order = orderRepository.save(
@@ -41,7 +40,7 @@ class OrderConfirmService(
             OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = PAYMENT_METHOD_TIMESALE, paidAt = LocalDateTime.now())
+            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = paymentMethod, paidAt = LocalDateTime.now())
         )
 
         // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill

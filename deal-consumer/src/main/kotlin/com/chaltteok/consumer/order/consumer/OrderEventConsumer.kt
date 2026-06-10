@@ -19,6 +19,6 @@ class OrderEventConsumer(
     fun consume(message: String) {
         val event = objectMapper.readValue(message, OrderEventDto::class.java)
         log.info { "주문 이벤트 수신 — userId=${event.userId}, dailyStockId=${event.dailyStockId}" }
-        orderProcessService.processOrder(event.userId, event.dailyStockId)
+        orderProcessService.processOrder(event.userId, event.dailyStockId, event.paymentMethod)
     }
 }

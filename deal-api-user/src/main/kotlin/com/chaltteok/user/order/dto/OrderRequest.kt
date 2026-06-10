@@ -9,4 +9,6 @@ data class OrderRequest(
     val stockUuid: String,
     @field:Min(1) @field:Max(100)
     val quantity: Int = 1,
+    @field:NotBlank
+    val paymentMethod: String,
 )
