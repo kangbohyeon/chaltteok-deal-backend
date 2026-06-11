@@ -5,9 +5,11 @@ import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
+import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
+import com.chaltteok.core.infrastructure.lock.DistributedLockService
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
@@ -24,6 +26,8 @@ import java.time.LocalDateTime
 
 private val logger = KotlinLogging.logger {}
 
+private const val PRODUCT_NAME_MAX_LEN = 450
+
 @Service
 class CheckoutServiceImpl(
     private val userRepository: UserRepository,
@@ -32,6 +36,7 @@ class CheckoutServiceImpl(
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
     private val outboxEventWriter: OutboxEventWriter,
+    private val distributedLockService: DistributedLockService,
 ) : CheckoutService {
 
     @Transactional
@@ -41,6 +46,17 @@ class CheckoutServiceImpl(
         val user = userRepository.findById(userId)
             .orElseThrow { BusinessException(CheckoutErrorCode.USER_NOT_FOUND) }
 
+        val lockKeys = request.items.map { "lock:product:${it.productUuid}" }
+
+        return distributedLockService.withMultiLock(
+            keys = lockKeys,
+            onFail = { throw BusinessException(CheckoutErrorCode.STOCK_LOCK_FAILED) },
+        ) {
+            executeCheckout(user, request)
+        }
+    }
+
+    private fun executeCheckout(user: User, request: CheckoutRequest): CheckoutResponse {
         val productUuids = request.items.map { it.productUuid }
         val productMap = productRepository.findAllByProductUuidInWithLock(productUuids)
             .associateBy { it.productUuid }
@@ -49,12 +65,8 @@ class CheckoutServiceImpl(
         val serverTotal = request.items.sumOf { item ->
             val product = productMap[item.productUuid]
                 ?: throw BusinessException(CheckoutErrorCode.PRODUCT_NOT_FOUND)
-            if (product.currentStock != null) {
-                if (product.currentStock!! < item.quantity) {
-                    throw BusinessException(CheckoutErrorCode.INSUFFICIENT_STOCK)
-                }
-                product.currentStock = product.currentStock!! - item.quantity
-                if (product.currentStock == 0) product.isSoldOut = true
+            if (!product.deductStock(item.quantity)) {
+                throw BusinessException(CheckoutErrorCode.INSUFFICIENT_STOCK)
             }
             product.price.toLong() * item.quantity
         }
@@ -84,8 +96,9 @@ class CheckoutServiceImpl(
         val productName = buildString {
             for ((index, item) in orderItems.withIndex()) {
                 if (index > 0) append(", ")
-                if (length + item.product.name.length > 450) {
-                    append("…"); break
+                if (length + item.product.name.length > PRODUCT_NAME_MAX_LEN) {
+                    append("…")
+                    break
                 }
                 append(item.product.name)
             }

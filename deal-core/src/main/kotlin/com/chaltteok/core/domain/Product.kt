@@ -52,4 +52,12 @@ class Product(
 
     @OneToMany(mappedBy = "product", cascade = [CascadeType.REMOVE], orphanRemoval = true)
     val comments: MutableList<Comment> = mutableListOf()
+
+    fun deductStock(quantity: Int): Boolean {
+        val stock = currentStock ?: return true
+        if (stock < quantity) return false
+        currentStock = stock - quantity
+        if (currentStock == 0) isSoldOut = true
+        return true
+    }
 }
