@@ -20,7 +20,7 @@ class DistributedLockService(private val redissonClient: RedissonClient) {
         val lock = redissonClient.getLock(key)
         val acquired = lock.tryLock(waitSec, leaseSec, TimeUnit.SECONDS)
         if (!acquired) {
-            log.warn { "분산 락 획득 실패 — key=$key" }
+            log.warn { "분산 락 획득 실패 — keyCount=1" }
             return onFail()
         }
         return try {
@@ -41,7 +41,7 @@ class DistributedLockService(private val redissonClient: RedissonClient) {
         val multiLock = redissonClient.getMultiLock(*locks.toTypedArray())
         val acquired = multiLock.tryLock(waitSec, leaseSec, TimeUnit.SECONDS)
         if (!acquired) {
-            log.warn { "분산 멀티 락 획득 실패 — keys=$keys" }
+            log.warn { "분산 멀티 락 획득 실패 — keyCount=${keys.size}" }
             return onFail()
         }
         return try {

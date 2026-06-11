@@ -11,11 +11,18 @@ import org.springframework.context.annotation.Configuration
 class RedissonConfig(
     @Value("\${spring.data.redis.host}") private val host: String,
     @Value("\${spring.data.redis.port}") private val port: Int,
+    @Value("\${spring.data.redis.password:#{null}}") private val password: String?,
+    @Value("\${spring.data.redis.ssl.enabled:false}") private val sslEnabled: Boolean,
 ) {
     @Bean
     fun redissonClient(): RedissonClient {
+        val scheme = if (sslEnabled) "rediss" else "redis"
         val config = Config()
-        config.useSingleServer().address = "redis://$host:$port"
+        config.useSingleServer()
+            .setAddress("$scheme://$host:$port")
+            .setConnectionPoolSize(10)
+            .setConnectionMinimumIdleSize(2)
+            .also { if (!password.isNullOrBlank()) it.setPassword(password) }
         return Redisson.create(config)
     }
 }

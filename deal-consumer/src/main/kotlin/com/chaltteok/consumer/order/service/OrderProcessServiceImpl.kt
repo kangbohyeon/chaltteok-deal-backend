@@ -14,6 +14,8 @@ private val log = KotlinLogging.logger {}
 
 private const val MAX_RETRY = 3
 private const val RETRY_DELAY_MS = 50L
+// 분산 락 leaseTime: 재시도 최대 시간(150ms) + DB 처리 여유분을 합산하여 5s로 설정
+private const val LOCK_LEASE_SEC = 5L
 
 @Service
 class OrderProcessServiceImpl(
@@ -37,8 +39,11 @@ class OrderProcessServiceImpl(
         }
 
         val lockKey = "lock:daily-stock:$dailyStockId"
+        // waitSec=0: Kafka 컨슈머 스레드 블로킹 방지 — 락 획득 실패 시 즉시 스킵, Kafka 재처리에 위임
         distributedLockService.withLock(
             key = lockKey,
+            waitSec = 0L,
+            leaseSec = LOCK_LEASE_SEC,
             onFail = {
                 log.warn { "분산 락 획득 실패로 주문 처리 스킵 — userId=$userId, dailyStockId=$dailyStockId" }
             },
