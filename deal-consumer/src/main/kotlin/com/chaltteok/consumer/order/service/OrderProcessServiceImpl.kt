@@ -3,6 +3,7 @@ package com.chaltteok.consumer.order.service
 import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
 import com.chaltteok.core.domain.enums.PaymentMethod
+import com.chaltteok.core.infrastructure.lock.DistributedLockService
 import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.user.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -21,6 +22,7 @@ class OrderProcessServiceImpl(
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
     private val orderConfirmService: OrderConfirmService,
+    private val distributedLockService: DistributedLockService,
 ) : OrderProcessService {
 
     override fun processOrder(userId: Long, dailyStockId: Long, paymentMethod: PaymentMethod) {
@@ -34,27 +36,34 @@ class OrderProcessServiceImpl(
             return
         }
 
-        var retries = 0
-        var stockDecremented = false
-        while (!stockDecremented && retries < MAX_RETRY) {
-            try {
-                stockDecremented = stockDecrementHelper.tryDecrement(dailyStockId)
-                if (!stockDecremented) {
-                    log.warn { "재고 소진 — dailyStockId=$dailyStockId" }
-                    return
+        val lockKey = "lock:daily-stock:$dailyStockId"
+        distributedLockService.withLock(
+            key = lockKey,
+            onFail = {
+                log.warn { "분산 락 획득 실패로 주문 처리 스킵 — userId=$userId, dailyStockId=$dailyStockId" }
+            },
+        ) {
+            var retries = 0
+            var stockDecremented = false
+            while (!stockDecremented && retries < MAX_RETRY) {
+                try {
+                    stockDecremented = stockDecrementHelper.tryDecrement(dailyStockId)
+                    if (!stockDecremented) {
+                        log.warn { "재고 소진 — dailyStockId=$dailyStockId" }
+                        return@withLock
+                    }
+                } catch (e: ObjectOptimisticLockingFailureException) {
+                    retries++
+                    log.warn { "낙관적 락 충돌, 재시도 $retries/$MAX_RETRY — dailyStockId=$dailyStockId" }
+                    if (retries >= MAX_RETRY) {
+                        log.error { "낙관적 락 재시도 초과, 주문 처리 포기 — dailyStockId=$dailyStockId" }
+                        return@withLock
+                    }
+                    Thread.sleep(RETRY_DELAY_MS)
                 }
-            } catch (e: ObjectOptimisticLockingFailureException) {
-                retries++
-                log.warn { "낙관적 락 충돌, 재시도 $retries/$MAX_RETRY — dailyStockId=$dailyStockId" }
-                if (retries >= MAX_RETRY) {
-                    log.error { "낙관적 락 재시도 초과, 주문 처리 포기 — dailyStockId=$dailyStockId" }
-                    return
-                }
-                Thread.sleep(RETRY_DELAY_MS)
             }
+            // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용
+            orderConfirmService.confirmOrder(user, dailyStock, paymentMethod)
         }
-
-        // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용
-        orderConfirmService.confirmOrder(user, dailyStock, paymentMethod)
     }
 }
