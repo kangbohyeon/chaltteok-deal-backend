@@ -2,7 +2,6 @@ package com.chaltteok.owner.dashboard.service
 
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
-import com.chaltteok.core.repository.orderstats.OrderStatsRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.owner.dashboard.dto.DashboardOverviewResponse
 import com.chaltteok.owner.dashboard.dto.HourlySalesItem
@@ -21,7 +20,6 @@ import java.time.temporal.TemporalAdjusters
 class DashboardServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
-    private val orderStatsRepository: OrderStatsRepository,
     private val userRepository: UserRepository,
 ) : DashboardService {
 
@@ -37,15 +35,14 @@ class DashboardServiceImpl(
             resolvePeriodRange(period)
         }
 
-        val stats = orderStatsRepository.findAllByStatDateBetween(fromDate, toDate)
-        val (orderCount, totalRevenue, cancelledCount) = stats.fold(Triple(0L, 0L, 0L)) { (oc, tr, cc), s ->
-            Triple(oc + s.orderCount, tr + s.totalRevenue, cc + s.cancelledCount)
-        }
-        val avgOrderValue = if (orderCount > 0) totalRevenue / orderCount else 0L
-
-        // tb_order_stats 미집계 항목 — user 테이블 직접 조회 불가피
         val fromDt = fromDate.atStartOfDay()
         val toDt = toDate.atTime(LocalTime.MAX)
+
+        val agg = orderRepository.findSalesPeriodAgg(fromDt, toDt)
+        val orderCount = agg.orderCount
+        val totalRevenue = agg.totalRevenue
+        val cancelledCount = agg.cancelledCount
+        val avgOrderValue = if (orderCount > 0) totalRevenue / orderCount else 0L
         val newCustomers = userRepository.countNewUsers(fromDt, toDt)
         val repeatCustomers = userRepository.countRepeatOrderUsers(fromDt, toDt)
 
@@ -64,11 +61,13 @@ class DashboardServiceImpl(
 
     override fun getSalesTrend(from: LocalDate, to: LocalDate): SalesTrendResponse {
         validateDateRange(from, to)
-        val items = orderStatsRepository.findAllByStatDateBetween(from, to).map { stat ->
+        val fromDt = from.atStartOfDay()
+        val toDt = to.atTime(LocalTime.MAX)
+        val items = orderRepository.findDailySalesTrend(fromDt, toDt).map { agg ->
             SalesTrendItem(
-                date = stat.statDate,
-                orderCount = stat.orderCount,
-                revenue = stat.totalRevenue,
+                date = agg.date,
+                orderCount = agg.orderCount,
+                revenue = agg.revenue,
             )
         }
         return SalesTrendResponse(trend = items)
