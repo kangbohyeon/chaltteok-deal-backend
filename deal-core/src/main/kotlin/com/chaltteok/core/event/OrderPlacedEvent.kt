@@ -6,4 +6,5 @@ data class OrderPlacedEvent(
     val userId: Long,
     val dailyStockId: Long,
     val paymentMethod: PaymentMethod,
+    val quantity: Int = 1,
 )

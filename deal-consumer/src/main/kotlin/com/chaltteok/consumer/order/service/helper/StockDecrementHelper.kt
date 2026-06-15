@@ -11,11 +11,11 @@ class StockDecrementHelper(
     private val dailyStockRepository: DailyStockRepository,
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun tryDecrement(dailyStockId: Long): Boolean {
+    fun tryDecrement(dailyStockId: Long, quantity: Int): Boolean {
         val stock = dailyStockRepository.findById(dailyStockId)
             .orElseThrow { RuntimeException("DailyStock not found: $dailyStockId") }
-        if (stock.remainStock <= 0) return false
-        stock.remainStock -= 1
+        if (stock.remainStock < quantity) return false
+        stock.remainStock -= quantity
         if (stock.remainStock == 0) stock.status = DailyStockStatus.SOLD_OUT
         return true
     }

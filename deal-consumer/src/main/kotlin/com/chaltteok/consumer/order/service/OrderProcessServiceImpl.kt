@@ -27,7 +27,7 @@ class OrderProcessServiceImpl(
     private val distributedLockService: DistributedLockService,
 ) : OrderProcessService {
 
-    override fun processOrder(userId: Long, dailyStockId: Long, paymentMethod: PaymentMethod) {
+    override fun processOrder(userId: Long, dailyStockId: Long, quantity: Int, paymentMethod: PaymentMethod) {
         val user = userRepository.findById(userId)
             .orElseThrow { RuntimeException("User not found: $userId") }
         val dailyStock = dailyStockRepository.findById(dailyStockId)
@@ -52,7 +52,7 @@ class OrderProcessServiceImpl(
             var stockDecremented = false
             while (!stockDecremented && retries < MAX_RETRY) {
                 try {
-                    stockDecremented = stockDecrementHelper.tryDecrement(dailyStockId)
+                    stockDecremented = stockDecrementHelper.tryDecrement(dailyStockId, quantity)
                     if (!stockDecremented) {
                         log.warn { "재고 소진 — dailyStockId=$dailyStockId" }
                         return@withLock
@@ -68,7 +68,7 @@ class OrderProcessServiceImpl(
                 }
             }
             // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용
-            orderConfirmService.confirmOrder(user, dailyStock, paymentMethod)
+            orderConfirmService.confirmOrder(user, dailyStock, quantity, paymentMethod)
         }
     }
 }

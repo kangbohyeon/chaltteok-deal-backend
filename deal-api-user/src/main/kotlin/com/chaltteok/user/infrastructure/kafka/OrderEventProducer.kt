@@ -16,9 +16,9 @@ class OrderEventProducer(
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper,
 ) {
-    fun sendOrderEvent(userId: Long, dailyStockId: Long, paymentMethod: PaymentMethod) {
+    fun sendOrderEvent(userId: Long, dailyStockId: Long, quantity: Int, paymentMethod: PaymentMethod) {
         val payload = objectMapper.writeValueAsString(
-            OrderPlacedEvent(userId = userId, dailyStockId = dailyStockId, paymentMethod = paymentMethod)
+            OrderPlacedEvent(userId = userId, dailyStockId = dailyStockId, paymentMethod = paymentMethod, quantity = quantity)
         )
         kafkaTemplate.send(TOPIC, userId.toString(), payload)
             .whenComplete { result, ex ->
