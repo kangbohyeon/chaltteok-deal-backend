@@ -31,17 +31,17 @@ class OrderConfirmService(
     private val outboxEventWriter: OutboxEventWriter,
 ) {
     @Transactional
-    fun confirmOrder(user: User, dailyStock: DailyStock, paymentMethod: PaymentMethod) {
-        val totalPrice = dailyStock.salePrice
+    fun confirmOrder(user: User, dailyStock: DailyStock, quantity: Int, paymentMethod: PaymentMethod) {
+        val totalPrice = dailyStock.salePrice.toLong() * quantity
 
         val order = orderRepository.save(
-            Order(user = user, totalPrice = totalPrice, status = OrderStatus.COMPLETED)
+            Order(user = user, totalPrice = totalPrice.toInt(), status = OrderStatus.COMPLETED)
         )
         orderItemRepository.save(
-            OrderItem(order = order, product = dailyStock.product, quantity = 1, price = dailyStock.salePrice)
+            OrderItem(order = order, product = dailyStock.product, quantity = quantity, price = dailyStock.salePrice)
         )
         paymentRepository.save(
-            Payment(order = order, amount = totalPrice, status = PaymentStatus.SUCCESS, paymentMethod = paymentMethod.name, paidAt = LocalDateTime.now())
+            Payment(order = order, amount = totalPrice.toInt(), status = PaymentStatus.SUCCESS, paymentMethod = paymentMethod.name, paidAt = LocalDateTime.now())
         )
 
         // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill
