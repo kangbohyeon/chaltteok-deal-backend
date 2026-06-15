@@ -17,6 +17,9 @@ class Notification(
 
     @Column(name = "is_read", nullable = false)
     var isRead: Boolean = false,
+
+    @Column(name = "order_number", nullable = true, length = 50)
+    val orderNumber: String? = null,
 ) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
