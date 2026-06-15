@@ -7,6 +7,7 @@ import com.chaltteok.core.repository.order.dto.DailySalesAgg
 import com.chaltteok.core.repository.order.dto.HourlySalesAgg
 import com.chaltteok.core.repository.order.dto.SalesPeriodAgg
 import com.querydsl.core.types.dsl.Expressions
+import com.querydsl.core.types.dsl.NumberExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -21,37 +22,33 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
     private val qOrder = QOrder.order
 
     override fun findSalesPeriodAgg(from: LocalDateTime, to: LocalDateTime): SalesPeriodAgg {
-        val completedCount = jpaQueryFactory
-            .select(qOrder.id.count())
-            .from(qOrder)
-            .where(
-                qOrder.status.eq(OrderStatus.COMPLETED),
-                qOrder.orderedAt.between(from, to),
-            )
-            .fetchOne() ?: 0L
+        val completedCountExpr: NumberExpression<Long> = Expressions.numberTemplate(
+            Long::class.java,
+            "SUM(CASE WHEN {0} = 'COMPLETED' THEN 1 ELSE 0 END)",
+            qOrder.status,
+        )
+        val revenueExpr: NumberExpression<Long> = Expressions.numberTemplate(
+            Long::class.java,
+            "SUM(CASE WHEN {0} = 'COMPLETED' THEN {1} ELSE 0 END)",
+            qOrder.status,
+            qOrder.totalPrice,
+        )
+        val cancelledCountExpr: NumberExpression<Long> = Expressions.numberTemplate(
+            Long::class.java,
+            "SUM(CASE WHEN {0} IN ('CANCELLED', 'FAILED') THEN 1 ELSE 0 END)",
+            qOrder.status,
+        )
 
-        val totalRevenue = jpaQueryFactory
-            .select(qOrder.totalPrice.longValue().sum())
+        val row = jpaQueryFactory
+            .select(completedCountExpr, revenueExpr, cancelledCountExpr)
             .from(qOrder)
-            .where(
-                qOrder.status.eq(OrderStatus.COMPLETED),
-                qOrder.orderedAt.between(from, to),
-            )
-            .fetchOne() ?: 0L
-
-        val cancelledCount = jpaQueryFactory
-            .select(qOrder.id.count())
-            .from(qOrder)
-            .where(
-                qOrder.status.`in`(OrderStatus.CANCELLED, OrderStatus.FAILED),
-                qOrder.orderedAt.between(from, to),
-            )
-            .fetchOne() ?: 0L
+            .where(qOrder.orderedAt.between(from, to))
+            .fetchOne()
 
         return SalesPeriodAgg(
-            orderCount = completedCount,
-            totalRevenue = totalRevenue,
-            cancelledCount = cancelledCount,
+            orderCount = row?.get(completedCountExpr) ?: 0L,
+            totalRevenue = row?.get(revenueExpr) ?: 0L,
+            cancelledCount = row?.get(cancelledCountExpr) ?: 0L,
         )
     }
 
