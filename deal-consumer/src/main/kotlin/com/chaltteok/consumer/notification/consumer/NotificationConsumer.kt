@@ -30,6 +30,7 @@ class NotificationConsumer(
                 type = NotificationType.ORDER.name,
                 title = "새 주문이 들어왔습니다",
                 message = "${event.productName} (%,d원)".format(event.totalAmount),
+                orderNumber = event.orderNumber,
             )
         )
     }

@@ -10,6 +10,7 @@ class NotificationResponse(
     val title: String,
     val message: String,
     @get:JsonProperty("isRead") val isRead: Boolean,
+    val orderNumber: String?,
     val createdAt: LocalDateTime,
 ) {
     companion object {
@@ -19,6 +20,7 @@ class NotificationResponse(
             title = notification.title,
             message = notification.message,
             isRead = notification.isRead,
+            orderNumber = notification.orderNumber,
             createdAt = notification.createdAt,
         )
     }
