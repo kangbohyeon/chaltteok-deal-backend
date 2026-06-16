@@ -17,6 +17,10 @@ class UserProfileServiceImpl(
     private val passwordEncoder: PasswordEncoder,
 ) : UserProfileService {
 
+    companion object {
+        private const val PASSWORD_EXPIRY_DAYS = 90L
+    }
+
     @Transactional(readOnly = true)
     override fun getProfile(userId: Long): UserProfileResponse {
         val user = userRepository.findById(userId)
@@ -37,7 +41,13 @@ class UserProfileServiceImpl(
         val user = userRepository.findById(userId)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
-        if (user.password != null) {
+        // 임시 비밀번호 로그인 또는 비밀번호 만료로 인한 강제 변경 플로우는
+        // currentPassword 입력을 받지 않으므로 검증을 건너뜀
+        val isForcedChange = user.requirePasswordChange ||
+            user.passwordChangedAt == null ||
+            user.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(PASSWORD_EXPIRY_DAYS))
+
+        if (user.password != null && !isForcedChange) {
             if (request.currentPassword.isNullOrBlank() ||
                 !passwordEncoder.matches(request.currentPassword, user.password)) {
                 throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
@@ -46,5 +56,6 @@ class UserProfileServiceImpl(
 
         user.password = passwordEncoder.encode(request.newPassword)
         user.passwordChangedAt = LocalDateTime.now()
+        user.requirePasswordChange = false
     }
 }

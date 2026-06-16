@@ -2,13 +2,14 @@ package com.chaltteok.user.auth.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.dto.LoginResponseDto
+import com.chaltteok.common.security.dto.PasswordChangeReason
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
-import com.chaltteok.user.auth.email.UserEmailService
 import com.chaltteok.user.auth.ratelimit.AccountRecoveryRateLimiter
+import com.chaltteok.user.infrastructure.kafka.PasswordResetEmailProducer
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +21,7 @@ class UserAuthServiceImpl(
     private val userRepository: UserRepository,
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
-    private val userEmailService: UserEmailService,
+    private val passwordResetEmailProducer: PasswordResetEmailProducer,
     private val loginFailureRecorder: LoginFailureRecorder,
     private val accountRecoveryRateLimiter: AccountRecoveryRateLimiter,
 ) : UserAuthService {
@@ -50,10 +51,16 @@ class UserAuthServiceImpl(
 
         loginFailureRecorder.resetFailure(user.id!!)
 
-        val requirePasswordChange = resolvePasswordChangeRequired(user)
+        val passwordChangeReason = resolvePasswordChangeReason(user)
         val accessToken = jwtTokenProvider.generateAccessToken(user.id!!, ROLE)
         val refreshToken = jwtTokenProvider.generateRefreshToken(user.id!!, ROLE)
-        return LoginResponseDto(accessToken, refreshToken, user.userUuid, requirePasswordChange)
+        return LoginResponseDto(
+            accessToken,
+            refreshToken,
+            user.userUuid,
+            requirePasswordChange = passwordChangeReason != null,
+            passwordChangeReason = passwordChangeReason,
+        )
     }
 
     private fun checkAccountLock(user: User) {
@@ -68,10 +75,13 @@ class UserAuthServiceImpl(
         throw BusinessException(AuthErrorCode.ACCOUNT_LOCKED)
     }
 
-    private fun resolvePasswordChangeRequired(user: User): Boolean =
-        user.requirePasswordChange ||
-            user.passwordChangedAt == null ||
-            user.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(PASSWORD_EXPIRY_DAYS))
+    private fun resolvePasswordChangeReason(user: User): PasswordChangeReason? = when {
+        user.requirePasswordChange -> PasswordChangeReason.TEMP_PASSWORD
+        user.passwordChangedAt == null ||
+            user.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(PASSWORD_EXPIRY_DAYS)) ->
+            PasswordChangeReason.EXPIRED
+        else -> null
+    }
 
     @Transactional
     override fun register(request: RegisterRequest) {
@@ -113,7 +123,7 @@ class UserAuthServiceImpl(
         // 비밀번호 재설정 성공 시 계정 잠금 해제
         user.lockedAt = null
         user.loginFailedCount = 0
-        userEmailService.sendPasswordReset(email, tempPassword)
+        passwordResetEmailProducer.sendPasswordResetRequested(email, tempPassword)
     }
 
     private fun maskEmail(email: String): String {

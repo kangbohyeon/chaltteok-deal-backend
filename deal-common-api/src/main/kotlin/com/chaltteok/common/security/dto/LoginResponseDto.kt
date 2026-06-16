@@ -5,4 +5,10 @@ class LoginResponseDto(
     val refreshToken: String,
     val userUuid: String,
     val requirePasswordChange: Boolean = false,
+    val passwordChangeReason: PasswordChangeReason? = null,
 )
+
+enum class PasswordChangeReason {
+    TEMP_PASSWORD,
+    EXPIRED,
+}

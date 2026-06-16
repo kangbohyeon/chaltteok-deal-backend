@@ -18,6 +18,9 @@ class KafkaTopicConfig {
     @Bean fun orderCancelledEventsTopic(): NewTopic =
         TopicBuilder.name(KafkaTopics.ORDER_CANCELLED).partitions(3).replicas(1).build()
 
+    @Bean fun passwordResetEmailsTopic(): NewTopic =
+        TopicBuilder.name(KafkaTopics.PASSWORD_RESET_EMAILS).partitions(3).replicas(1).build()
+
     @Bean fun dealOrderEventsDltTopic(): NewTopic =
         TopicBuilder.name(KafkaTopics.DEAL_ORDER_EVENTS_DLT).partitions(3).replicas(1).build()
 
@@ -26,4 +29,7 @@ class KafkaTopicConfig {
 
     @Bean fun orderCancelledEventsDltTopic(): NewTopic =
         TopicBuilder.name(KafkaTopics.ORDER_CANCELLED_DLT).partitions(3).replicas(1).build()
+
+    @Bean fun passwordResetEmailsDltTopic(): NewTopic =
+        TopicBuilder.name(KafkaTopics.PASSWORD_RESET_EMAILS_DLT).partitions(3).replicas(1).build()
 }
