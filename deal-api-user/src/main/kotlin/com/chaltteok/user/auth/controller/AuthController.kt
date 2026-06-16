@@ -9,7 +9,10 @@ import com.chaltteok.common.security.dto.TokenDto
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.user.auth.dto.FindAccountRequest
+import com.chaltteok.user.auth.dto.FindAccountResponse
 import com.chaltteok.user.auth.dto.RegisterRequest
+import com.chaltteok.user.auth.dto.ResetPasswordRequest
 import com.chaltteok.user.auth.service.UserAuthService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
@@ -54,5 +57,15 @@ class AuthController(
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_TOKEN) }
             .userUuid
         return ResponseDTO.success(TokenDto(newAccess, newRefresh, userUuid))
+    }
+
+    @PostMapping("/find-account")
+    fun findAccount(@Valid @RequestBody request: FindAccountRequest): ResponseDTO<FindAccountResponse> =
+        ResponseDTO.success(FindAccountResponse(userAuthService.findAccount(request.name, request.phone)))
+
+    @PostMapping("/reset-password")
+    fun resetPassword(@Valid @RequestBody request: ResetPasswordRequest): ResponseDTO<Unit> {
+        userAuthService.resetPassword(request.email, request.name)
+        return ResponseDTO.success(Unit)
     }
 }
