@@ -32,6 +32,16 @@ class EmailServiceImpl(private val mailSender: JavaMailSender) : EmailService {
         mailSender.send(message)
     }
 
+    override fun sendPasswordReset(email: String, tempPassword: String) {
+        val message: MimeMessage = mailSender.createMimeMessage()
+        MimeMessageHelper(message, true, "UTF-8").apply {
+            setTo(sanitize(email))
+            setSubject("[찰떡딜] 임시 비밀번호가 발급되었습니다")
+            setText(buildPasswordResetHtml(tempPassword), true)
+        }
+        mailSender.send(message)
+    }
+
     // 이메일 헤더 인젝션 방지: CRLF 제거
     private fun sanitize(value: String): String = value.replace("[\r\n]".toRegex(), "")
 
@@ -110,6 +120,23 @@ class EmailServiceImpl(private val mailSender: JavaMailSender) : EmailService {
               </p>
             </body>
             </html>
+        """.trimIndent()
+    }
+
+    private fun buildPasswordResetHtml(tempPassword: String): String {
+        val safeTemp = HtmlUtils.htmlEscape(tempPassword)
+
+        return """
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+              <h2 style="color:#e11d48">찰떡딜 임시 비밀번호 안내</h2>
+              <p>임시 비밀번호로 로그인 후 반드시 비밀번호를 변경해 주세요.</p>
+              <div style="background:#f9fafb;border-radius:8px;padding:16px;font-size:20px;font-family:monospace;letter-spacing:2px;text-align:center;">
+                <strong>$safeTemp</strong>
+              </div>
+              <p style="color:#6b7280;font-size:12px;margin-top:16px">
+                이 메일은 자동 발송된 메일입니다. 본인이 요청하지 않은 경우 고객센터에 문의하세요.
+              </p>
+            </div>
         """.trimIndent()
     }
 }

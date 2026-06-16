@@ -2,13 +2,14 @@ package com.chaltteok.user.auth.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.dto.LoginResponseDto
+import com.chaltteok.common.security.dto.PasswordChangeReason
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
-import com.chaltteok.user.auth.email.UserEmailService
 import com.chaltteok.user.auth.ratelimit.AccountRecoveryRateLimiter
+import com.chaltteok.user.infrastructure.kafka.PasswordResetEmailProducer
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +21,7 @@ class UserAuthServiceImpl(
     private val userRepository: UserRepository,
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
-    private val userEmailService: UserEmailService,
+    private val passwordResetEmailProducer: PasswordResetEmailProducer,
     private val loginFailureRecorder: LoginFailureRecorder,
     private val accountRecoveryRateLimiter: AccountRecoveryRateLimiter,
 ) : UserAuthService {
@@ -50,10 +51,24 @@ class UserAuthServiceImpl(
 
         loginFailureRecorder.resetFailure(user.id!!)
 
-        val requirePasswordChange = resolvePasswordChangeRequired(user)
+        val passwordChangeReason = resolvePasswordChangeReason(user)
+        // 강제 변경 사유(임시 비밀번호/만료)가 있으면 entity에 영속화해 두어야
+        // changePassword가 "이번 요청이 강제 변경 플로우인지"를 판단할 수 있다.
+        // 이렇게 하지 않으면 changePassword 쪽에서 만료 여부를 매번 다시 계산하게 되고,
+        // 이는 만료된 모든 계정이 currentPassword 검증을 영구적으로 우회하는
+        // 보안 취약점으로 이어진다 (탈취된 세션만으로 비밀번호 변경 가능).
+        if (passwordChangeReason != null) {
+            user.requirePasswordChange = true
+        }
         val accessToken = jwtTokenProvider.generateAccessToken(user.id!!, ROLE)
         val refreshToken = jwtTokenProvider.generateRefreshToken(user.id!!, ROLE)
-        return LoginResponseDto(accessToken, refreshToken, user.userUuid, requirePasswordChange)
+        return LoginResponseDto(
+            accessToken,
+            refreshToken,
+            user.userUuid,
+            requirePasswordChange = passwordChangeReason != null,
+            passwordChangeReason = passwordChangeReason,
+        )
     }
 
     private fun checkAccountLock(user: User) {
@@ -68,10 +83,13 @@ class UserAuthServiceImpl(
         throw BusinessException(AuthErrorCode.ACCOUNT_LOCKED)
     }
 
-    private fun resolvePasswordChangeRequired(user: User): Boolean =
-        user.requirePasswordChange ||
-            user.passwordChangedAt == null ||
-            user.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(PASSWORD_EXPIRY_DAYS))
+    private fun resolvePasswordChangeReason(user: User): PasswordChangeReason? = when {
+        user.requirePasswordChange -> PasswordChangeReason.TEMP_PASSWORD
+        user.passwordChangedAt == null ||
+            user.passwordChangedAt!!.isBefore(LocalDateTime.now().minusDays(PASSWORD_EXPIRY_DAYS)) ->
+            PasswordChangeReason.EXPIRED
+        else -> null
+    }
 
     @Transactional
     override fun register(request: RegisterRequest) {
@@ -113,7 +131,7 @@ class UserAuthServiceImpl(
         // 비밀번호 재설정 성공 시 계정 잠금 해제
         user.lockedAt = null
         user.loginFailedCount = 0
-        userEmailService.sendPasswordReset(email, tempPassword)
+        passwordResetEmailProducer.sendPasswordResetRequested(email, tempPassword)
     }
 
     private fun maskEmail(email: String): String {
