@@ -1,5 +1,6 @@
 package com.chaltteok.owner.order.service
 
+import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
@@ -30,27 +31,25 @@ class OwnerOrderServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun getOrders(status: String?, page: Int, size: Int): OwnerOrderListResponse {
-        val pageable = PageRequest.of(page, size)
+    override fun getOrders(status: OrderStatus?, page: Int, size: Int): OwnerOrderListResponse {
+        val safePage = page.coerceAtLeast(0)
+        val safeSize = size.coerceIn(1, 100)
+        val pageable = PageRequest.of(safePage, safeSize)
+
         val orderPage = if (status != null) {
-            val orderStatus = runCatching { OrderStatus.valueOf(status) }
-                .getOrElse { throw ResponseStatusException(HttpStatus.BAD_REQUEST, "유효하지 않은 주문 상태: $status") }
-            orderRepository.findAllByStatusOrderByOrderedAtDesc(orderStatus, pageable)
+            orderRepository.findAllByStatusOrderByOrderedAtDesc(status, pageable)
         } else {
             orderRepository.findAllByOrderByOrderedAtDesc(pageable)
         }
 
         val orderIds = orderPage.content.mapNotNull { it.id }
-        val itemsByOrderId = orderItemRepository.findByOrderIdsWithProduct(orderIds)
-            .groupBy { it.order?.id }
+        val itemsByOrderId = fetchItemsByOrderId(orderIds)
 
         val content = orderPage.content.map { order ->
             val items = itemsByOrderId[order.id] ?: emptyList()
-            val firstName = items.firstOrNull()?.product?.name ?: "-"
-            val productName = if (items.size > 1) "$firstName 외 ${items.size - 1}건" else firstName
             OwnerOrderSummaryResponse(
                 orderNumber = order.orderNumber,
-                productName = productName,
+                productName = buildProductName(items),
                 totalPrice = order.totalPrice,
                 status = order.status.name,
                 orderedAt = order.orderedAt,
@@ -65,5 +64,13 @@ class OwnerOrderServiceImpl(
             currentPage = orderPage.number,
             pageSize = orderPage.size,
         )
+    }
+
+    private fun fetchItemsByOrderId(orderIds: List<Long>): Map<Long?, List<OrderItem>> =
+        orderItemRepository.findByOrderIdsWithProduct(orderIds).groupBy { it.order?.id }
+
+    private fun buildProductName(items: List<OrderItem>): String {
+        val firstName = items.firstOrNull()?.product?.name ?: "-"
+        return if (items.size > 1) "$firstName 외 ${items.size - 1}건" else firstName
     }
 }
