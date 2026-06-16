@@ -52,6 +52,14 @@ class UserAuthServiceImpl(
         loginFailureRecorder.resetFailure(user.id!!)
 
         val passwordChangeReason = resolvePasswordChangeReason(user)
+        // 강제 변경 사유(임시 비밀번호/만료)가 있으면 entity에 영속화해 두어야
+        // changePassword가 "이번 요청이 강제 변경 플로우인지"를 판단할 수 있다.
+        // 이렇게 하지 않으면 changePassword 쪽에서 만료 여부를 매번 다시 계산하게 되고,
+        // 이는 만료된 모든 계정이 currentPassword 검증을 영구적으로 우회하는
+        // 보안 취약점으로 이어진다 (탈취된 세션만으로 비밀번호 변경 가능).
+        if (passwordChangeReason != null) {
+            user.requirePasswordChange = true
+        }
         val accessToken = jwtTokenProvider.generateAccessToken(user.id!!, ROLE)
         val refreshToken = jwtTokenProvider.generateRefreshToken(user.id!!, ROLE)
         return LoginResponseDto(
