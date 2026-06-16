@@ -16,6 +16,28 @@ class OrderItemRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Or
     private val qOrder = QOrder.order
     private val qProduct = QProduct.product
 
+    override fun sumQuantityByProductIds(productIds: List<Long>, status: OrderStatus): List<SalesCountProjection> {
+        if (productIds.isEmpty()) return emptyList()
+        return jpaQueryFactory
+            .select(qProduct.id, qOrderItem.quantity.longValue().sum())
+            .from(qOrderItem)
+            .join(qOrderItem.order, qOrder)
+            .join(qOrderItem.product, qProduct)
+            .where(
+                qProduct.id.`in`(productIds),
+                qOrder.status.eq(status),
+            )
+            .groupBy(qProduct.id)
+            .fetch()
+            .mapNotNull { tuple ->
+                val pid = tuple.get(qProduct.id) ?: return@mapNotNull null
+                object : SalesCountProjection {
+                    override val productId: Long = pid
+                    override val totalQty: Long = tuple.get(qOrderItem.quantity.longValue().sum()) ?: 0L
+                }
+            }
+    }
+
     override fun findTopProducts(from: LocalDateTime, to: LocalDateTime, limit: Int): List<TopProductAgg> {
         val uuidExpr = qProduct.productUuid
         val nameExpr = qProduct.name

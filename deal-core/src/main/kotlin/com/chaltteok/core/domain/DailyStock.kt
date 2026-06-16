@@ -29,10 +29,10 @@ class DailyStock(
     val stockType: String = "NORMAL",
 
     @Column(name = "sale_price", nullable = false)
-    val salePrice: Int,
+    var salePrice: Int,
 
     @Column(name = "total_qty", nullable = false)
-    val totalQty: Int,
+    var totalQty: Int,
 
     @Column(name = "remain_stock", nullable = false)
     var remainStock: Int,
@@ -43,6 +43,15 @@ class DailyStock(
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     var status: DailyStockStatus = DailyStockStatus.OPEN,
+
+    @Column(name = "start_at")
+    var startAt: LocalDateTime? = null,
+
+    @Column(name = "end_at")
+    var endAt: LocalDateTime? = null,
+
+    @Column(name = "max_purchase_count", nullable = true)
+    var maxPurchaseCount: Int? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
@@ -55,4 +64,20 @@ class DailyStock(
 
     @Column(name = "stock_uuid", nullable = false, unique = true, length = 36)
     val stockUuid: String = UUID.randomUUID().toString()
+
+    fun decrease(quantity: Int = 1) {
+        check(remainStock >= quantity) { "재고가 부족합니다" }
+        remainStock -= quantity
+        if (remainStock == 0) status = DailyStockStatus.SOLD_OUT
+    }
+
+    fun update(salePrice: Int, totalQty: Int, startAt: LocalDateTime?, endAt: LocalDateTime?, maxPurchaseCount: Int?) {
+        val qtyDelta = totalQty - this.totalQty
+        this.salePrice = salePrice
+        this.totalQty = totalQty
+        this.remainStock = maxOf(0, this.remainStock + qtyDelta)
+        this.startAt = startAt
+        this.endAt = endAt
+        this.maxPurchaseCount = maxPurchaseCount
+    }
 }

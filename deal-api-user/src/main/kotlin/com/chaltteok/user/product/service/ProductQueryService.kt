@@ -4,5 +4,7 @@ import com.chaltteok.user.product.dto.ProductResponse
 
 interface ProductQueryService {
     fun getProducts(): List<ProductResponse>
+    fun getProductByUuid(productUuid: String): ProductResponse
     fun getRecommendedProducts(): List<ProductResponse>
+    fun searchProducts(keyword: String): List<ProductResponse>
 }

@@ -5,6 +5,7 @@ import com.chaltteok.user.checkout.dto.CheckoutRequest
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.checkout.service.CheckoutService
 import jakarta.validation.Valid
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -14,8 +15,10 @@ class CheckoutController(
 ) {
     @PostMapping
     fun checkout(
-        @RequestHeader("X-User-Id") userId: Long,
+        authentication: Authentication,
         @Valid @RequestBody request: CheckoutRequest,
-    ): ResponseDTO<CheckoutResponse> =
-        ResponseDTO.success(checkoutService.checkout(userId, request))
+    ): ResponseDTO<CheckoutResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(checkoutService.checkout(userId, request))
+    }
 }

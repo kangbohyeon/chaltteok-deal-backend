@@ -17,8 +17,12 @@ dependencies {
     kapt("jakarta.persistence:jakarta.persistence-api")
     kapt("jakarta.annotation:jakarta.annotation-api")
 
+    // Jackson
+    api("com.fasterxml.jackson.module:jackson-module-kotlin")
+
     // Redis & Kafka
     api("org.springframework.boot:spring-boot-starter-data-redis")
+    api("org.redisson:redisson:3.27.2")
     api("org.springframework.kafka:spring-kafka")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

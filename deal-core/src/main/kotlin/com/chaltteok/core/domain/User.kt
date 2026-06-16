@@ -1,6 +1,7 @@
 package com.chaltteok.core.domain
 
 import jakarta.persistence.*
+import java.time.LocalDateTime
 import java.util.*
 
 @Entity
@@ -32,4 +33,22 @@ class User(
 
     @Column(name = "user_uuid", nullable = false, length = 36)
     val userUuid: String = UUID.randomUUID().toString()
+
+    @Column(name = "password", nullable = true, length = 255)
+    var password: String? = null
+
+    @Column(name = "password_changed_at")
+    var passwordChangedAt: LocalDateTime? = null
+
+    @Column(name = "phone", nullable = true, length = 20)
+    var phone: String? = null
+
+    @Column(name = "login_failed_count", nullable = false)
+    var loginFailedCount: Int = 0
+
+    @Column(name = "locked_at")
+    var lockedAt: LocalDateTime? = null
+
+    @Column(name = "require_password_change", nullable = false)
+    var requirePasswordChange: Boolean = false
 }

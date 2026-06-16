@@ -14,6 +14,7 @@ enum class GlobalErrorCode(
     INVALID_INPUT_VALUE("Invalid input value", HttpStatus.BAD_REQUEST),
     INVALID_TYPE_VALUE("The input value type is not valid", HttpStatus.BAD_REQUEST),
     METHOD_NOT_ALLOWED("Unsupported HTTP method", HttpStatus.METHOD_NOT_ALLOWED),
+    UNSUPPORTED_MEDIA_TYPE("Unsupported media type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     FILE_TOO_LARGE("File size cannot exceed", HttpStatus.PAYLOAD_TOO_LARGE),
     URL_NOT_FOUND("The URL you requested could not be found", HttpStatus.NOT_FOUND);
 }

@@ -13,7 +13,6 @@ import com.chaltteok.owner.dashboard.dto.TopProductsResponse
 import com.chaltteok.owner.dashboard.enums.DashboardPeriod
 import org.springframework.stereotype.Service
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.temporal.TemporalAdjusters
 
@@ -24,33 +23,52 @@ class DashboardServiceImpl(
     private val userRepository: UserRepository,
 ) : DashboardService {
 
-    override fun getOverview(period: DashboardPeriod): DashboardOverviewResponse {
-        val (from, to) = resolvePeriodRange(period)
+    companion object {
+        private const val MAX_PERIOD_DAYS = 365L
+    }
 
-        val salesAgg = orderRepository.findSalesPeriodAgg(from, to)
-        val newCustomers = userRepository.countNewUsers(from, to)
-        val repeatCustomers = userRepository.countRepeatOrderUsers(from, to)
-        val avgOrderValue = if (salesAgg.orderCount > 0) salesAgg.totalRevenue / salesAgg.orderCount else 0L
+    override fun getOverview(period: DashboardPeriod, from: LocalDate?, to: LocalDate?): DashboardOverviewResponse {
+        val (fromDate, toDate) = if (from != null && to != null) {
+            validateDateRange(from, to)
+            Pair(from, to)
+        } else {
+            resolvePeriodRange(period)
+        }
+
+        val fromDt = fromDate.atStartOfDay()
+        val toDt = toDate.atTime(LocalTime.MAX)
+
+        val agg = orderRepository.findSalesPeriodAgg(fromDt, toDt)
+        val orderCount = agg.orderCount
+        val totalRevenue = agg.totalRevenue
+        val cancelledCount = agg.cancelledCount
+        val avgOrderValue = if (orderCount > 0) totalRevenue / orderCount else 0L
+        val newCustomers = userRepository.countNewUsers(fromDt, toDt)
+        val repeatCustomers = userRepository.countRepeatOrderUsers(fromDt, toDt)
 
         return DashboardOverviewResponse(
             period = period.name,
-            from = from,
-            to = to,
-            totalRevenue = salesAgg.totalRevenue,
-            orderCount = salesAgg.orderCount,
+            from = fromDate,
+            to = toDate,
+            totalRevenue = totalRevenue,
+            orderCount = orderCount,
             avgOrderValue = avgOrderValue,
             newCustomers = newCustomers,
             repeatCustomers = repeatCustomers,
-            cancelledCount = salesAgg.cancelledCount,
+            cancelledCount = cancelledCount,
         )
     }
 
     override fun getSalesTrend(from: LocalDate, to: LocalDate): SalesTrendResponse {
+        validateDateRange(from, to)
         val fromDt = from.atStartOfDay()
         val toDt = to.atTime(LocalTime.MAX)
-
         val items = orderRepository.findDailySalesTrend(fromDt, toDt).map { agg ->
-            SalesTrendItem(date = agg.date, orderCount = agg.orderCount, revenue = agg.revenue)
+            SalesTrendItem(
+                date = agg.date,
+                orderCount = agg.orderCount,
+                revenue = agg.revenue,
+            )
         }
         return SalesTrendResponse(trend = items)
     }
@@ -77,15 +95,18 @@ class DashboardServiceImpl(
         return HourlySalesResponse(date = date, hourlySales = items)
     }
 
-    private fun resolvePeriodRange(period: DashboardPeriod): Pair<LocalDateTime, LocalDateTime> {
+    private fun validateDateRange(from: LocalDate, to: LocalDate) {
+        require(!from.isAfter(to)) { "시작일은 종료일보다 이전이어야 합니다." }
+        require(!to.isAfter(LocalDate.now())) { "종료일은 오늘 이전이어야 합니다." }
+        require(!from.isBefore(to.minusDays(MAX_PERIOD_DAYS))) { "조회 기간은 최대 ${MAX_PERIOD_DAYS}일입니다." }
+    }
+
+    private fun resolvePeriodRange(period: DashboardPeriod): Pair<LocalDate, LocalDate> {
         val today = LocalDate.now()
         return when (period) {
-            DashboardPeriod.DAILY -> Pair(today.atStartOfDay(), today.atTime(LocalTime.MAX))
-            DashboardPeriod.WEEKLY -> Pair(today.minusDays(6).atStartOfDay(), today.atTime(LocalTime.MAX))
-            DashboardPeriod.MONTHLY -> Pair(
-                today.with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay(),
-                today.atTime(LocalTime.MAX),
-            )
+            DashboardPeriod.DAILY -> Pair(today, today)
+            DashboardPeriod.WEEKLY -> Pair(today.minusDays(6), today)
+            DashboardPeriod.MONTHLY -> Pair(today.with(TemporalAdjusters.firstDayOfMonth()), today)
         }
     }
 }

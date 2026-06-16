@@ -3,10 +3,12 @@ package com.chaltteok.owner.auth.controller
 import com.chaltteok.common.dto.ResponseDTO
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.dto.LoginRequest
+import com.chaltteok.common.security.dto.LoginResponseDto
 import com.chaltteok.common.security.dto.ReissueRequest
 import com.chaltteok.common.security.dto.TokenDto
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
+import com.chaltteok.core.repository.owner.OwnerRepository
 import com.chaltteok.owner.auth.service.OwnerAuthService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.PostMapping
@@ -19,9 +21,10 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val ownerAuthService: OwnerAuthService,
     private val jwtTokenProvider: JwtTokenProvider,
+    private val ownerRepository: OwnerRepository,
 ) {
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseDTO<TokenDto> =
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseDTO<LoginResponseDto> =
         ResponseDTO.success(ownerAuthService.login(request.username, request.password))
 
     @PostMapping("/reissue")
@@ -38,6 +41,9 @@ class AuthController(
 
         val newAccess = jwtTokenProvider.generateAccessToken(userId, role)
         val newRefresh = jwtTokenProvider.generateRefreshToken(userId, role)
-        return ResponseDTO.success(TokenDto(newAccess, newRefresh, userId))
+        val ownerUuid = ownerRepository.findById(userId)
+            .orElseThrow { BusinessException(AuthErrorCode.INVALID_TOKEN) }
+            .ownerUuid
+        return ResponseDTO.success(TokenDto(newAccess, newRefresh, ownerUuid))
     }
 }

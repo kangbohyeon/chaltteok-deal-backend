@@ -6,6 +6,7 @@ import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.user.dailystock.dto.OpenDailyStockResponse
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class DailyStockQueryServiceImpl(
@@ -14,12 +15,17 @@ class DailyStockQueryServiceImpl(
 ) : DailyStockQueryService {
 
     @Transactional(readOnly = true)
-    override fun getOpenDailyStocks(): List<OpenDailyStockResponse> =
-        dailyStockRepository.findAllByStatusWithProduct(DailyStockStatus.OPEN)
-            .map { OpenDailyStockResponse.from(it) }
+    override fun getOpenDailyStocks(): List<OpenDailyStockResponse> {
+        val now = LocalDateTime.now()
+        val legacy = dailyStockRepository.findAllByStatusWithProduct(DailyStockStatus.OPEN)
+            .filter { it.startAt == null }
+        val timeSale = dailyStockRepository.findActiveTimeSaleStocks(now)
+        return (legacy + timeSale).map { OpenDailyStockResponse.from(it) }
+    }
 
     @Transactional(readOnly = true)
-    override fun getParticipatedStockIds(userId: Long): List<Long> =
-        eventHistoryRepository.findAllByUser_Id(userId)
-            .mapNotNull { it.dailyStock.id }
+    override fun getParticipationCounts(userId: Long): Map<String, Int> =
+        eventHistoryRepository.findAllWithStockByUserId(userId)
+            .groupBy { it.dailyStock.stockUuid }
+            .mapValues { it.value.size }
 }

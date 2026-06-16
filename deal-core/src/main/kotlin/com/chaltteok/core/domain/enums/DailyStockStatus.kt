@@ -1,5 +1,5 @@
 package com.chaltteok.core.domain.enums
 
 enum class DailyStockStatus {
-    OPEN, SOLD_OUT, CLOSED
+    SCHEDULED, OPEN, SOLD_OUT, CLOSED
 }

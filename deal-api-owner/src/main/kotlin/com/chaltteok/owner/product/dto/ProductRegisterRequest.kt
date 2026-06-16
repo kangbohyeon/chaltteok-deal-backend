@@ -1,12 +1,14 @@
 package com.chaltteok.owner.product.dto
 
 import com.chaltteok.core.domain.Product
+import com.chaltteok.core.domain.ProductConstants
 import com.chaltteok.core.domain.ProductOption
 import com.chaltteok.owner.product.enums.StockType
+import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 
-data class ProductRegisterRequest(
+class ProductRegisterRequest(
     @field:NotNull(message = "name must be not null or empty")
     val name: String,
 
@@ -14,14 +16,29 @@ data class ProductRegisterRequest(
     @field:Min(value = 100, message = "price must be more than 100")
     val price: Int,
 
-    val descp: String?
+    val descp: String?,
+    val isActive: Boolean = true,
+    val isSoldOut: Boolean = false,
+    val isRecommended: Boolean = false,
+    @field:Min(value = 0, message = "stock quantity must be 0 or more")
+    val stockQuantity: Int? = null,
+    @field:Min(value = 0, message = "display order must be 0 or more")
+    @field:Max(value = ProductConstants.DISPLAY_ORDER_MAX, message = "display order must be ${ProductConstants.DISPLAY_ORDER_MAX} or less")
+    val displayOrder: Int = 0,
 ) {
-    fun toProduct(imageUrl : String?): Product {
+    fun toProduct(imageUrl: String?): Product {
+        val soldOut = isSoldOut || stockQuantity == 0
         return Product(
             name = name,
             description = descp,
             imageUrl = imageUrl,
-            isActive = true
+            price = price,
+            isActive = isActive,
+            isSoldOut = soldOut,
+            isRecommended = isRecommended,
+            stockQuantity = stockQuantity,
+            currentStock = stockQuantity,
+            displayOrder = displayOrder,
         )
     }
 

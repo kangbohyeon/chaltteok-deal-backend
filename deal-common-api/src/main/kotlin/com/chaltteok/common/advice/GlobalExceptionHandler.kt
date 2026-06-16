@@ -8,6 +8,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -71,6 +72,14 @@ class GlobalExceptionHandler {
         return ResponseEntity
             .status(GlobalErrorCode.INVALID_TYPE_VALUE.status)
             .body(ResponseDTO.error(GlobalErrorCode.INVALID_TYPE_VALUE))
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
+    fun handleHttpMediaTypeNotSupported(e: HttpMediaTypeNotSupportedException): ResponseEntity<ResponseDTO<Any>> {
+        logger.warn { "Media Type Not Supported: ${e.contentType}" }
+        return ResponseEntity
+            .status(GlobalErrorCode.UNSUPPORTED_MEDIA_TYPE.status)
+            .body(ResponseDTO.error(GlobalErrorCode.UNSUPPORTED_MEDIA_TYPE))
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
