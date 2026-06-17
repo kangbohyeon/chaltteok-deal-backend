@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import java.time.LocalDate
 
 @Service
 class OwnerOrderServiceImpl(
@@ -31,16 +32,12 @@ class OwnerOrderServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun getOrders(status: OrderStatus?, page: Int, size: Int): OwnerOrderListResponse {
+    override fun getOrders(status: OrderStatus?, startDate: LocalDate?, endDate: LocalDate?, page: Int, size: Int): OwnerOrderListResponse {
         val safePage = page.coerceAtLeast(0)
         val safeSize = size.coerceIn(1, 100)
         val pageable = PageRequest.of(safePage, safeSize)
 
-        val orderPage = if (status != null) {
-            orderRepository.findAllByStatusOrderByOrderedAtDesc(status, pageable)
-        } else {
-            orderRepository.findAllByOrderByOrderedAtDesc(pageable)
-        }
+        val orderPage = orderRepository.findAllByOwnerFilter(status, startDate, endDate, pageable)
 
         val orderIds = orderPage.content.mapNotNull { it.id }
         val itemsByOrderId = fetchItemsByOrderId(orderIds)
