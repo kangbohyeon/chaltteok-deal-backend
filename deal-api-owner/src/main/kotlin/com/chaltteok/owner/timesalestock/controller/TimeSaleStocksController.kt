@@ -1,9 +1,9 @@
-package com.chaltteok.owner.dailystock.controller
+package com.chaltteok.owner.timesalestock.controller
 
 import com.chaltteok.common.dto.ResponseDTO
-import com.chaltteok.owner.dailystock.dto.DailyStocksRegisterRequest
-import com.chaltteok.owner.dailystock.dto.OwnerDailyStockListResponse
-import com.chaltteok.owner.dailystock.service.DailyStockService
+import com.chaltteok.owner.timesalestock.dto.OwnerTimeSaleStockListResponse
+import com.chaltteok.owner.timesalestock.dto.TimeSaleStocksRegisterRequest
+import com.chaltteok.owner.timesalestock.service.TimeSaleStockService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,33 +17,33 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/v1/owner/daily-stocks")
-class DailyStocksController(
-    private val dailyStockService: DailyStockService
+@RequestMapping("/api/v1/owner/time-sale-stocks")
+class TimeSaleStocksController(
+    private val timeSaleStockService: TimeSaleStockService
 ) {
     @GetMapping
-    fun getDailyStocks(): ResponseEntity<ResponseDTO<List<OwnerDailyStockListResponse>>> =
-        ResponseEntity.ok(ResponseDTO.success(dailyStockService.findAllDailyStocks()))
+    fun getTimeSaleStocks(): ResponseEntity<ResponseDTO<List<OwnerTimeSaleStockListResponse>>> =
+        ResponseEntity.ok(ResponseDTO.success(timeSaleStockService.findAllTimeSaleStocks()))
 
     @PostMapping
-    fun createDailyStock(@Valid @RequestBody dailyStocksRegisterRequest: DailyStocksRegisterRequest)
+    fun createTimeSaleStock(@Valid @RequestBody request: TimeSaleStocksRegisterRequest)
             : ResponseEntity<ResponseDTO<Any>> {
-        dailyStockService.registerDailyStock(dailyStocksRegisterRequest)
+        timeSaleStockService.registerTimeSaleStock(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDTO.success())
     }
 
     @PutMapping("/{stockUuid}")
-    fun updateDailyStock(
+    fun updateTimeSaleStock(
         @PathVariable stockUuid: String,
-        @Valid @RequestBody request: DailyStocksRegisterRequest,
+        @Valid @RequestBody request: TimeSaleStocksRegisterRequest,
     ): ResponseEntity<ResponseDTO<Any>> {
-        dailyStockService.updateDailyStock(stockUuid, request)
+        timeSaleStockService.updateTimeSaleStock(stockUuid, request)
         return ResponseEntity.ok(ResponseDTO.success())
     }
 
     @DeleteMapping("/{stockUuid}")
-    fun deleteDailyStock(@PathVariable stockUuid: String): ResponseEntity<ResponseDTO<Any>> {
-        dailyStockService.deleteDailyStock(stockUuid)
+    fun deleteTimeSaleStock(@PathVariable stockUuid: String): ResponseEntity<ResponseDTO<Any>> {
+        timeSaleStockService.deleteTimeSaleStock(stockUuid)
         return ResponseEntity.ok(ResponseDTO.success())
     }
 }

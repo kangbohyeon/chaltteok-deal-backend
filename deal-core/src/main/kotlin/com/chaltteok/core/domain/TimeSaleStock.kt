@@ -1,6 +1,6 @@
 package com.chaltteok.core.domain
 
-import com.chaltteok.core.domain.enums.DailyStockStatus
+import com.chaltteok.core.domain.enums.TimeSaleStockStatus
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -8,7 +8,7 @@ import java.util.*
 
 @Entity
 @Table(
-    name = "tb_daily_stocks",
+    name = "tb_time_sale_stocks",
     indexes = [
         Index(name = "idx_date_type", columnList = "sale_date, stock_type"),
     ],
@@ -17,7 +17,7 @@ import java.util.*
         UniqueConstraint(name = "uk_product_date_type", columnNames = ["product_id", "sale_date", "stock_type"])
     ]
 )
-class DailyStock(
+class TimeSaleStock(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     val product: Product,
@@ -42,7 +42,7 @@ class DailyStock(
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    var status: DailyStockStatus = DailyStockStatus.OPEN,
+    var status: TimeSaleStockStatus = TimeSaleStockStatus.OPEN,
 
     @Column(name = "start_at")
     var startAt: LocalDateTime? = null,
@@ -68,7 +68,7 @@ class DailyStock(
     fun decrease(quantity: Int = 1) {
         check(remainStock >= quantity) { "재고가 부족합니다" }
         remainStock -= quantity
-        if (remainStock == 0) status = DailyStockStatus.SOLD_OUT
+        if (remainStock == 0) status = TimeSaleStockStatus.SOLD_OUT
     }
 
     fun update(salePrice: Int, totalQty: Int, startAt: LocalDateTime?, endAt: LocalDateTime?, maxPurchaseCount: Int?) {

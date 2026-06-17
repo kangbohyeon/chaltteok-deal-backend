@@ -1,10 +1,10 @@
-package com.chaltteok.owner.dailystock.dto
+package com.chaltteok.owner.timesalestock.dto
 
-import com.chaltteok.core.domain.DailyStock
+import com.chaltteok.core.domain.TimeSaleStock
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-data class OwnerDailyStockListResponse(
+data class OwnerTimeSaleStockListResponse(
     val uuid: String,
     val productUuid: String,
     val productName: String,
@@ -20,7 +20,7 @@ data class OwnerDailyStockListResponse(
     val maxPurchaseCount: Int?,
 ) {
     companion object {
-        fun from(stock: DailyStock, optionUuid: String) = OwnerDailyStockListResponse(
+        fun from(stock: TimeSaleStock, optionUuid: String) = OwnerTimeSaleStockListResponse(
             uuid = stock.stockUuid,
             productUuid = stock.product.productUuid,
             productName = stock.product.name,

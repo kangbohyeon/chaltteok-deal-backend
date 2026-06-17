@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class OrderPlacedEvent(
     val userId: Long,
-    val dailyStockId: Long,
+    val timeSaleStockId: Long,
     val paymentMethod: PaymentMethod,
     @JsonProperty(defaultValue = "1")
     val quantity: Int = 1,
