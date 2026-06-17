@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Repository
 class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderRepositoryCustom {
@@ -170,7 +171,7 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
             predicate = predicate.and(qOrder.orderedAt.goe(startDate.atStartOfDay()))
         }
         if (endDate != null) {
-            predicate = predicate.and(qOrder.orderedAt.loe(endDate.atTime(23, 59, 59)))
+            predicate = predicate.and(qOrder.orderedAt.loe(endDate.atTime(LocalTime.MAX)))
         }
 
         val content = jpaQueryFactory

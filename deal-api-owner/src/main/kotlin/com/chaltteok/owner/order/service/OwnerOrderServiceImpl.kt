@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 @Service
 class OwnerOrderServiceImpl(
@@ -33,6 +34,14 @@ class OwnerOrderServiceImpl(
 
     @Transactional(readOnly = true)
     override fun getOrders(status: OrderStatus?, startDate: LocalDate?, endDate: LocalDate?, page: Int, size: Int): OwnerOrderListResponse {
+        if (startDate != null && endDate != null) {
+            if (startDate.isAfter(endDate)) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must not be after endDate")
+            }
+            if (ChronoUnit.DAYS.between(startDate, endDate) > 365) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Date range must not exceed 365 days")
+            }
+        }
         val safePage = page.coerceAtLeast(0)
         val safeSize = size.coerceIn(1, 100)
         val pageable = PageRequest.of(safePage, safeSize)
