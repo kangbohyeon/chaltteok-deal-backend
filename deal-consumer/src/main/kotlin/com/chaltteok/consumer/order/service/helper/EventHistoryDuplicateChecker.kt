@@ -1,7 +1,7 @@
 package com.chaltteok.consumer.order.service.helper
 
-import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.EventHistory
+import com.chaltteok.core.domain.TimeSaleStock
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -17,12 +17,12 @@ class EventHistoryDuplicateChecker(
     private val eventHistoryRepository: EventHistoryRepository,
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun isDuplicate(user: User, dailyStock: DailyStock): Boolean {
+    fun isDuplicate(user: User, timeSaleStock: TimeSaleStock): Boolean {
         return try {
-            eventHistoryRepository.saveAndFlush(EventHistory(user = user, dailyStock = dailyStock))
+            eventHistoryRepository.saveAndFlush(EventHistory(user = user, timeSaleStock = timeSaleStock))
             false
         } catch (e: DataIntegrityViolationException) {
-            log.warn { "중복 구매 시도 감지 — userId=${user.id}, dailyStockId=${dailyStock.id}" }
+            log.warn { "중복 구매 시도 감지 — userId=${user.id}, timeSaleStockId=${timeSaleStock.id}" }
             true
         }
     }

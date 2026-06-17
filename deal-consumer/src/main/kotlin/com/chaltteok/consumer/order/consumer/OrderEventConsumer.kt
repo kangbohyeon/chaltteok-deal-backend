@@ -19,11 +19,11 @@ class OrderEventConsumer(
     @KafkaListener(topics = ["deal-order-events"], groupId = "deal-order-group", concurrency = "3", containerFactory = "kafkaListenerContainerFactory")
     fun consume(message: String) {
         val event = objectMapper.readValue(message, OrderPlacedEvent::class.java)
-        log.info { "주문 이벤트 수신 — userId=${event.userId}, dailyStockId=${event.dailyStockId}" }
+        log.info { "주문 이벤트 수신 — userId=${event.userId}, timeSaleStockId=${event.timeSaleStockId}" }
         orderProcessService.processOrder(
             OrderProcessCommand(
                 userId = event.userId,
-                dailyStockId = event.dailyStockId,
+                timeSaleStockId = event.timeSaleStockId,
                 quantity = event.quantity,
                 paymentMethod = event.paymentMethod,
             )

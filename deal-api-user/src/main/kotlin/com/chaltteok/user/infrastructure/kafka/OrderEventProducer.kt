@@ -16,14 +16,14 @@ class OrderEventProducer(
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper,
 ) {
-    fun sendOrderEvent(userId: Long, dailyStockId: Long, quantity: Int, paymentMethod: PaymentMethod) {
+    fun sendOrderEvent(userId: Long, timeSaleStockId: Long, quantity: Int, paymentMethod: PaymentMethod) {
         val payload = objectMapper.writeValueAsString(
-            OrderPlacedEvent(userId = userId, dailyStockId = dailyStockId, paymentMethod = paymentMethod, quantity = quantity)
+            OrderPlacedEvent(userId = userId, timeSaleStockId = timeSaleStockId, paymentMethod = paymentMethod, quantity = quantity)
         )
         kafkaTemplate.send(TOPIC, userId.toString(), payload)
             .whenComplete { result, ex ->
                 if (ex != null) {
-                    log.error(ex) { "Kafka 발행 실패 — userId=$userId, dailyStockId=$dailyStockId" }
+                    log.error(ex) { "Kafka 발행 실패 — userId=$userId, timeSaleStockId=$timeSaleStockId" }
                 } else {
                     log.info { "Kafka 발행 성공 — offset=${result.recordMetadata.offset()}" }
                 }

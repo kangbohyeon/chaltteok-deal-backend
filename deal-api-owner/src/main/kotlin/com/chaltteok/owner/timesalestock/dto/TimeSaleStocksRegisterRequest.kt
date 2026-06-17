@@ -1,21 +1,21 @@
-package com.chaltteok.owner.dailystock.dto
+package com.chaltteok.owner.timesalestock.dto
 
-import com.chaltteok.core.domain.DailyStock
 import com.chaltteok.core.domain.Product
-import com.chaltteok.core.domain.enums.DailyStockStatus
-import com.chaltteok.owner.dailystock.enums.DailyStockType
+import com.chaltteok.core.domain.TimeSaleStock
+import com.chaltteok.core.domain.enums.TimeSaleStockStatus
+import com.chaltteok.owner.timesalestock.enums.TimeSaleStockType
 import jakarta.validation.constraints.NotNull
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-data class DailyStocksRegisterRequest(
+data class TimeSaleStocksRegisterRequest(
     @field:NotNull(message = "option id must not be null")
     val optionId: String,
 
     @field:NotNull(message = "sale date must not be null")
     val saleDate: LocalDate,
 
-    val stockType: DailyStockType? = DailyStockType.NORMAL,
+    val stockType: TimeSaleStockType? = TimeSaleStockType.NORMAL,
 
     val salePrice: Int?,
 
@@ -27,16 +27,16 @@ data class DailyStocksRegisterRequest(
     val maxPurchaseCount: Int? = null,
 ) {
     init {
-        if ((stockType ?: DailyStockType.NORMAL) == DailyStockType.TIMESALE) {
+        if ((stockType ?: TimeSaleStockType.NORMAL) == TimeSaleStockType.TIMESALE) {
             require(startAt != null) { "startAt is required for TIMESALE stock" }
             require(endAt != null) { "endAt is required for TIMESALE stock" }
         }
     }
 
-    fun toDailyStockEntity(product: Product, salePrice: Int, status: DailyStockStatus = DailyStockStatus.OPEN): DailyStock {
-        val finalStockType = (this.stockType ?: DailyStockType.NORMAL).name
+    fun toTimeSaleStockEntity(product: Product, salePrice: Int, status: TimeSaleStockStatus = TimeSaleStockStatus.OPEN): TimeSaleStock {
+        val finalStockType = (this.stockType ?: TimeSaleStockType.NORMAL).name
 
-        return DailyStock(
+        return TimeSaleStock(
             product = product,
             saleDate = saleDate,
             stockType = finalStockType,

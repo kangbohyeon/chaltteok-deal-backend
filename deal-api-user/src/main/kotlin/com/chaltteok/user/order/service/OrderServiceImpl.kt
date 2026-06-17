@@ -2,11 +2,11 @@ package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.OutboxEvent
-import com.chaltteok.core.domain.enums.DailyStockStatus
+import com.chaltteok.core.domain.enums.TimeSaleStockStatus
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.event.OrderCancelledEvent
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
-import com.chaltteok.core.repository.dailystock.DailyStockRepository
+import com.chaltteok.core.repository.timesalestock.TimeSaleStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
@@ -31,7 +31,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class OrderServiceImpl(
-    private val dailyStockRepository: DailyStockRepository,
+    private val timeSaleStockRepository: TimeSaleStockRepository,
     private val eventHistoryRepository: EventHistoryRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
@@ -42,28 +42,28 @@ class OrderServiceImpl(
 
     @Transactional(readOnly = true)
     override fun placeOrder(userId: Long, request: OrderRequest): OrderResponse {
-        val dailyStock = dailyStockRepository.findByStockUuid(request.stockUuid)
-            ?: throw BusinessException(OrderErrorCode.DAILY_STOCK_NOT_FOUND)
+        val timeSaleStock = timeSaleStockRepository.findByStockUuid(request.stockUuid)
+            ?: throw BusinessException(OrderErrorCode.TIME_SALE_STOCK_NOT_FOUND)
 
-        if (dailyStock.status != DailyStockStatus.OPEN) {
+        if (timeSaleStock.status != TimeSaleStockStatus.OPEN) {
             throw BusinessException(OrderErrorCode.STOCK_NOT_AVAILABLE)
         }
-        if (dailyStock.remainStock < request.quantity) {
+        if (timeSaleStock.remainStock < request.quantity) {
             throw BusinessException(OrderErrorCode.INSUFFICIENT_STOCK)
         }
 
-        val maxPurchaseCount = dailyStock.maxPurchaseCount
+        val maxPurchaseCount = timeSaleStock.maxPurchaseCount
         if (maxPurchaseCount != null) {
-            val participated = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
+            val participated = eventHistoryRepository.countByUser_IdAndTimeSaleStock_Id(userId, timeSaleStock.id)
             if (participated + request.quantity > maxPurchaseCount) {
                 if (participated == 0L) throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
                 throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
             }
         }
 
-        val dailyStockId = dailyStock.id ?: error("DailyStock ID가 null입니다")
-        orderEventProducer.sendOrderEvent(userId, dailyStockId, request.quantity, request.paymentMethod)
-        logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId" }
+        val timeSaleStockId = timeSaleStock.id ?: error("TimeSaleStock ID가 null입니다")
+        orderEventProducer.sendOrderEvent(userId, timeSaleStockId, request.quantity, request.paymentMethod)
+        logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId, timeSaleStockId=$timeSaleStockId" }
 
         return OrderResponse.pending()
     }

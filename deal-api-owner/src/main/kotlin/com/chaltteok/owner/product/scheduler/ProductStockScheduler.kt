@@ -1,7 +1,7 @@
 package com.chaltteok.owner.product.scheduler
 
-import com.chaltteok.core.repository.dailystock.DailyStockRepository
 import com.chaltteok.core.repository.product.ProductRepository
+import com.chaltteok.core.repository.timesalestock.TimeSaleStockRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -13,7 +13,7 @@ private val logger = KotlinLogging.logger {}
 @Component
 class ProductStockScheduler(
     private val productRepository: ProductRepository,
-    private val dailyStockRepository: DailyStockRepository,
+    private val timeSaleStockRepository: TimeSaleStockRepository,
 ) {
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     @Transactional
@@ -26,7 +26,7 @@ class ProductStockScheduler(
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     fun openScheduledTimeSales() {
-        val opened = dailyStockRepository.openScheduledStocks(LocalDateTime.now())
+        val opened = timeSaleStockRepository.openScheduledStocks(LocalDateTime.now())
         if (opened > 0) {
             logger.info { "Opened $opened scheduled time sale stocks" }
         }
@@ -35,7 +35,7 @@ class ProductStockScheduler(
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     fun closeExpiredTimeSales() {
-        val closed = dailyStockRepository.closeExpiredStocks(LocalDateTime.now())
+        val closed = timeSaleStockRepository.closeExpiredStocks(LocalDateTime.now())
         if (closed > 0) {
             logger.info { "Closed $closed expired time sale stocks" }
         }
