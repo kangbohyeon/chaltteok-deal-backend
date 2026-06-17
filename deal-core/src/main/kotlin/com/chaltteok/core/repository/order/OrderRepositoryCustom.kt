@@ -23,4 +23,11 @@ interface OrderRepositoryCustom {
         paymentStatus: String?,
         pageable: Pageable,
     ): Page<Order>
+
+    fun findAllByOwnerFilter(
+        status: OrderStatus?,
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        pageable: Pageable,
+    ): Page<Order>
 }

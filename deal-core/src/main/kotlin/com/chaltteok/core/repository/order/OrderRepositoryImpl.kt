@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Repository
 class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderRepositoryCustom {
@@ -137,6 +138,40 @@ class OrderRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : OrderR
                 )
                 .fetch()
             predicate = predicate.and(qOrder.id.`in`(matchingOrderIds))
+        }
+
+        val content = jpaQueryFactory
+            .selectFrom(qOrder)
+            .where(predicate)
+            .orderBy(qOrder.orderedAt.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val total = jpaQueryFactory
+            .select(qOrder.count())
+            .from(qOrder)
+            .where(predicate)
+            .fetchOne() ?: 0L
+
+        return PageImpl(content, pageable, total)
+    }
+
+    override fun findAllByOwnerFilter(
+        status: OrderStatus?,
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        pageable: Pageable,
+    ): Page<Order> {
+        var predicate = qOrder.isNotNull
+        if (status != null) {
+            predicate = predicate.and(qOrder.status.eq(status))
+        }
+        if (startDate != null) {
+            predicate = predicate.and(qOrder.orderedAt.goe(startDate.atStartOfDay()))
+        }
+        if (endDate != null) {
+            predicate = predicate.and(qOrder.orderedAt.loe(endDate.atTime(LocalTime.MAX)))
         }
 
         val content = jpaQueryFactory
