@@ -35,6 +35,8 @@ class JwtAuthenticationFilter(
     private fun resolveToken(request: HttpServletRequest): String? {
         val bearer = request.getHeader("Authorization")
         if (bearer != null && bearer.startsWith("Bearer ")) return bearer.substring(7)
-        return request.getParameter("token")
+        // EventSource는 커스텀 헤더를 지원하지 않으므로 SSE 엔드포인트에 한해 쿼리 파라미터 토큰 허용
+        if (request.requestURI.endsWith("/notifications/sse")) return request.getParameter("token")
+        return null
     }
 }
