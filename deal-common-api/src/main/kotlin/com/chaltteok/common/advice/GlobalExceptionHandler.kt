@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.NoHandlerFoundException
@@ -98,9 +99,16 @@ class GlobalExceptionHandler {
             .body(ResponseDTO.error(GlobalErrorCode.URL_NOT_FOUND))
     }
 
+    @ExceptionHandler(AsyncRequestNotUsableException::class)
+    fun handleAsyncRequestNotUsable(e: AsyncRequestNotUsableException): ResponseEntity<Void> {
+        // SSE/비동기 응답 도중 클라이언트 연결 끊김 — 정상 케이스이므로 응답 없이 무시
+        logger.debug { "Client disconnected during async response: ${e.message}" }
+        return ResponseEntity.noContent().build()
+    }
+
     @ExceptionHandler(Exception::class)
     fun handleRuntimeErrors(e: Exception): ResponseEntity<ResponseDTO<Any>> {
-        logger.error(e) { "Unhandled Exception: ${e.message}" } // Stack Trace 포함 로깅
+        logger.error(e) { "Unhandled Exception: ${e.message}" }
         return ResponseEntity.status(GlobalErrorCode.INTERNAL_SERVER_ERROR.status)
             .body(
                 ResponseDTO.error(
