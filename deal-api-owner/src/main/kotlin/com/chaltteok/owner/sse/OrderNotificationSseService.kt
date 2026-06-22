@@ -15,10 +15,12 @@ class OrderNotificationSseService {
 
     fun subscribe(userId: Long): SseEmitter {
         val emitter = SseEmitter(Long.MAX_VALUE)
-        emitters[userId] = emitter
-        emitter.onCompletion { emitters.remove(userId) }
-        emitter.onTimeout { emitters.remove(userId) }
-        emitter.onError { emitters.remove(userId) }
+        // 기존 emitter를 먼저 정상 종료 — 구버전 onCompletion이 신규 emitter를 삭제하는 race condition 방지
+        emitters.put(userId, emitter)?.complete()
+        // 조건부 삭제: map에 이 emitter가 있을 때만 제거 (신규 emitter 보호)
+        emitter.onCompletion { emitters.remove(userId, emitter) }
+        emitter.onTimeout { emitters.remove(userId, emitter) }
+        emitter.onError { emitters.remove(userId, emitter) }
         runCatching {
             emitter.send(SseEmitter.event().name("connected").data("ok"))
         }
@@ -44,14 +46,14 @@ class OrderNotificationSseService {
         deadKeys.forEach { emitters.remove(it) }
     }
 
-    // nginx proxy_read_timeout(기본 60s) 방지 — 30초마다 SSE 주석 전송
-    @Scheduled(fixedDelay = 30_000)
+    // 프록시(nginx 60s, Next.js dev) timeout 방지 — 15초마다 ping 전송
+    @Scheduled(fixedDelay = 15_000)
     fun heartbeat() {
         if (emitters.isEmpty()) return
         val deadKeys = mutableListOf<Long>()
         emitters.forEach { (userId, emitter) ->
             runCatching {
-                emitter.send(SseEmitter.event().comment("ping"))
+                emitter.send(SseEmitter.event().name("ping").data("ok"))
             }.onFailure {
                 log.debug { "SSE heartbeat 실패 — userId=$userId (연결 종료)" }
                 deadKeys += userId
