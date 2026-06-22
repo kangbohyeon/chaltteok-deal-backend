@@ -1,6 +1,7 @@
 package com.chaltteok.common.security.config
 
 import com.chaltteok.common.security.jwt.JwtAuthenticationFilter
+import jakarta.servlet.DispatcherType
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -28,6 +29,8 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
+                    // SSE SseEmitter async dispatch — Tomcat이 새 스레드에서 필터체인을 재실행하므로 허용
+                    .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     // owner
                     .requestMatchers("/api/v1/owner/auth/**").permitAll()
