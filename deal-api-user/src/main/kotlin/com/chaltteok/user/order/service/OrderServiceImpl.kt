@@ -62,7 +62,7 @@ class OrderServiceImpl(
         }
 
         val timeSaleStockId = timeSaleStock.id ?: error("TimeSaleStock ID가 null입니다")
-        orderEventProducer.sendOrderEvent(userId, timeSaleStockId, request.quantity, request.paymentMethod)
+        orderEventProducer.sendOrderEvent(userId, timeSaleStockId, request.quantity, request.paymentMethod, request.couponCode)
         logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId, timeSaleStockId=$timeSaleStockId" }
 
         return OrderResponse.pending()

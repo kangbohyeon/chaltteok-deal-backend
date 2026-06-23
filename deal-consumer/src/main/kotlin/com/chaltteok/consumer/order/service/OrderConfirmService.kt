@@ -11,6 +11,7 @@ import com.chaltteok.core.domain.enums.PaymentMethod
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
+import com.chaltteok.core.repository.coupon.CouponRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
@@ -29,10 +30,22 @@ class OrderConfirmService(
     private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
     private val outboxEventWriter: OutboxEventWriter,
+    private val couponRepository: CouponRepository,
 ) {
     @Transactional
-    fun confirmOrder(user: User, timeSaleStock: TimeSaleStock, quantity: Int, paymentMethod: PaymentMethod) {
-        val totalPrice = timeSaleStock.salePrice.toLong() * quantity
+    fun confirmOrder(user: User, timeSaleStock: TimeSaleStock, quantity: Int, paymentMethod: PaymentMethod, couponCode: String? = null) {
+        var totalPrice = timeSaleStock.salePrice.toLong() * quantity
+
+        if (couponCode != null) {
+            // PESSIMISTIC_WRITE: 동시 Kafka 메시지에서 수량 초과 사용 방지
+            couponRepository.findByCodeForUpdate(couponCode.uppercase().trim()).ifPresent { coupon ->
+                if (coupon.isValid(totalPrice.toInt())) {
+                    val discountAmount = coupon.calculateDiscount(totalPrice.toInt())
+                    totalPrice = maxOf(0L, totalPrice - discountAmount)
+                    coupon.use()
+                }
+            }
+        }
 
         val order = orderRepository.save(
             Order(user = user, totalPrice = totalPrice.toInt(), status = OrderStatus.COMPLETED)

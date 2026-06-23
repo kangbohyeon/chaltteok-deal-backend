@@ -12,4 +12,5 @@ data class OrderRequest(
     @field:Max(value = 100, message = "1회 최대 구매 수량은 100개입니다")
     val quantity: Int = 1,
     val paymentMethod: PaymentMethod,
+    val couponCode: String? = null,
 )
