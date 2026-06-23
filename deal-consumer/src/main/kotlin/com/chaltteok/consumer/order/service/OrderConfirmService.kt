@@ -37,7 +37,8 @@ class OrderConfirmService(
         var totalPrice = timeSaleStock.salePrice.toLong() * quantity
 
         if (couponCode != null) {
-            couponRepository.findByCode(couponCode.uppercase().trim()).ifPresent { coupon ->
+            // PESSIMISTIC_WRITE: 동시 Kafka 메시지에서 수량 초과 사용 방지
+            couponRepository.findByCodeForUpdate(couponCode.uppercase().trim()).ifPresent { coupon ->
                 if (coupon.isValid(totalPrice.toInt())) {
                     val discountAmount = coupon.calculateDiscount(totalPrice.toInt())
                     totalPrice = maxOf(0L, totalPrice - discountAmount)
