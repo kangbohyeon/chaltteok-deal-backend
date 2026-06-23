@@ -70,7 +70,7 @@ class OrderProcessServiceImpl(
                 }
             }
             // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용
-            orderConfirmService.confirmOrder(user, timeSaleStock, command.quantity, command.paymentMethod)
+            orderConfirmService.confirmOrder(user, timeSaleStock, command.quantity, command.paymentMethod, command.couponCode)
         }
     }
 }

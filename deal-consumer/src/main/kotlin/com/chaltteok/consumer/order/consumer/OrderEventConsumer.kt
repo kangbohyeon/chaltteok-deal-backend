@@ -26,6 +26,7 @@ class OrderEventConsumer(
                 timeSaleStockId = event.timeSaleStockId,
                 quantity = event.quantity,
                 paymentMethod = event.paymentMethod,
+                couponCode = event.couponCode,
             )
         )
     }
