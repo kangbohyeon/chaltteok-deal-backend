@@ -50,8 +50,9 @@ class JwtAuthGatewayFilter(
 
     @PostConstruct
     fun validateConfig() {
-        // 애플리케이션 시작 시점에 JWT 키 길이 검증 — 배포 후 런타임 예외 방지
+        // 애플리케이션 시작 시점에 JWT 키 길이 검증 및 JwtParser 사전 초기화 — 배포 후 런타임 예외 방지
         key
+        jwtParser
     }
 
     // 헤더 sanitize + JWT 검증은 로깅 필터(HIGHEST_PRECEDENCE) 다음으로 실행
@@ -124,6 +125,8 @@ class JwtAuthGatewayFilter(
     private fun parseClaims(token: String): Claims =
         jwtParser.parseSignedClaims(token).payload
 
+    // Gateway가 서명한 내부 신뢰 토큰 — JwtAuthenticationFilter.computeInternalSig와 반드시 동일한 알고리즘 사용해야 한다.
+    // (HmacSHA256, payload="$userId:$role", Base64 인코딩) — 양측 불일치 시 인증 전면 실패
     private fun computeInternalSig(userId: String, role: String): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(internalSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))

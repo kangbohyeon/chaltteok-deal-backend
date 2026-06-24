@@ -31,7 +31,7 @@ class JwtAuthenticationFilter(
         val sig = request.getHeader("X-Internal-Sig")
 
         if (userId != null && role != null && sig != null) {
-            val expected = computeExpectedSig(userId.toString(), role)
+            val expected = computeInternalSig(userId.toString(), role)
             // timing-safe 비교 — sig 길이 차이 포함 상수 시간 비교
             if (MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8), sig.toByteArray(Charsets.UTF_8))) {
                 val auth = UsernamePasswordAuthenticationToken(
@@ -43,7 +43,9 @@ class JwtAuthenticationFilter(
         filterChain.doFilter(request, response)
     }
 
-    private fun computeExpectedSig(userId: String, role: String): String {
+    // JwtAuthGatewayFilter.computeInternalSig와 반드시 동일한 알고리즘 사용해야 한다.
+    // (HmacSHA256, payload="$userId:$role", Base64 인코딩) — 양측 불일치 시 인증 전면 실패
+    private fun computeInternalSig(userId: String, role: String): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(internalSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
         return Base64.getEncoder().encodeToString(mac.doFinal("$userId:$role".toByteArray(Charsets.UTF_8)))
