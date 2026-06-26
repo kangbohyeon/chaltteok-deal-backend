@@ -1,5 +1,6 @@
 package com.chaltteok.filter
 
+import com.chaltteok.config.GatewayProperties
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.JwtException
@@ -33,9 +34,7 @@ private val UNAUTHORIZED_BODY =
 @Component
 class JwtAuthGatewayFilter(
     @Value("\${jwt.secret}") private val secret: String,
-    @Value("\${gateway.internal-secret}") private val internalSecret: String,
-    @Value("\${gateway.public-paths}") private val publicPaths: List<String>,
-    @Value("\${gateway.sse-paths:}") private val ssePaths: List<String>,
+    private val gatewayProps: GatewayProperties,
 ) : GlobalFilter, Ordered {
 
     private val key: SecretKey by lazy {
@@ -113,14 +112,14 @@ class JwtAuthGatewayFilter(
         val bearer = request.headers.getFirst("Authorization")
         if (bearer != null && bearer.startsWith("Bearer ")) return bearer.substring(7)
         // SSE: EventSource는 커스텀 헤더 미지원 → gateway.sse-paths에 설정된 경로에서만 쿼리 파라미터 허용
-        if (ssePaths.any { pathMatcher.match(it, request.uri.path) }) {
+        if (gatewayProps.ssePaths.any { pathMatcher.match(it, request.uri.path) }) {
             return request.queryParams.getFirst("token")
         }
         return null
     }
 
     private fun isPublicPath(path: String): Boolean =
-        publicPaths.any { pattern -> pathMatcher.match(pattern, path) }
+        gatewayProps.publicPaths.any { pattern -> pathMatcher.match(pattern, path) }
 
     private fun parseClaims(token: String): Claims =
         jwtParser.parseSignedClaims(token).payload
@@ -129,7 +128,7 @@ class JwtAuthGatewayFilter(
     // (HmacSHA256, payload="$userId:$role", Base64 인코딩) — 양측 불일치 시 인증 전면 실패
     private fun computeInternalSig(userId: String, role: String): String {
         val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(internalSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        mac.init(SecretKeySpec(gatewayProps.internalSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
         return Base64.getEncoder().encodeToString(mac.doFinal("$userId:$role".toByteArray(Charsets.UTF_8)))
     }
 
