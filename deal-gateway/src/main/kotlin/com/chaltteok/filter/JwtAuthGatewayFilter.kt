@@ -30,6 +30,9 @@ private const val ROLE_CLAIM = "role"
 private val UNAUTHORIZED_BODY =
     """{"result":"ERROR","errorCode":"A002","errorMessage":"유효하지 않은 토큰입니다."}"""
         .toByteArray(Charsets.UTF_8)
+private val FORBIDDEN_BODY =
+    """{"result":"ERROR","errorCode":"A005","errorMessage":"접근 권한이 없습니다."}"""
+        .toByteArray(Charsets.UTF_8)
 
 @Component
 class JwtAuthGatewayFilter(
@@ -46,12 +49,18 @@ class JwtAuthGatewayFilter(
         Jwts.parser().verifyWith(key).build()
     }
     private val pathMatcher = AntPathMatcher()
+    private val gatewayToken: String by lazy {
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(gatewayProps.internalSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        Base64.getEncoder().encodeToString(mac.doFinal("gateway-request".toByteArray(Charsets.UTF_8)))
+    }
 
     @PostConstruct
     fun validateConfig() {
         // 애플리케이션 시작 시점에 JWT 키 길이 검증 및 JwtParser 사전 초기화 — 배포 후 런타임 예외 방지
         key
         jwtParser
+        gatewayToken
     }
 
     // 헤더 sanitize + JWT 검증은 로깅 필터(HIGHEST_PRECEDENCE) 다음으로 실행
@@ -62,10 +71,11 @@ class JwtAuthGatewayFilter(
         val path = request.uri.path
         val method = request.method
 
-        // 외부 요청에서 X-User-* / X-Internal-Sig 위조 방지 — 헤더가 존재할 때만 mutate
+        // 외부 요청에서 X-User-* / X-Internal-Sig / X-Gateway-Token 위조 방지 — 헤더가 존재할 때만 mutate
         val hasInjectedHeaders = request.headers.containsKey("X-User-Id")
             || request.headers.containsKey("X-User-Role")
             || request.headers.containsKey("X-Internal-Sig")
+            || request.headers.containsKey("X-Gateway-Token")
         val sanitized = if (hasInjectedHeaders) {
             exchange.mutate()
                 .request(request.mutate()
@@ -73,14 +83,18 @@ class JwtAuthGatewayFilter(
                         h.remove("X-User-Id")
                         h.remove("X-User-Role")
                         h.remove("X-Internal-Sig")
+                        h.remove("X-Gateway-Token")
                     }
                     .build())
                 .build()
         } else exchange
 
-        // OPTIONS(CORS preflight) 및 공개 경로는 인증 없이 통과
+        // OPTIONS(CORS preflight) 및 공개 경로는 인증 없이 통과 — X-Gateway-Token은 주입하여 다운스트림 출처 검증 활성화
         if (method == HttpMethod.OPTIONS || isPublicPath(path)) {
-            return chain.filter(sanitized)
+            val withToken = sanitized.mutate()
+                .request(sanitized.request.mutate().header("X-Gateway-Token", gatewayToken).build())
+                .build()
+            return chain.filter(withToken)
         }
 
         val token = resolveToken(sanitized.request) ?: return unauthorized(exchange)
@@ -92,11 +106,16 @@ class JwtAuthGatewayFilter(
             // Gateway가 서명한 내부 신뢰 토큰 — 하위 서비스에서 헤더 위조 여부 검증에 사용
             val internalSig = computeInternalSig(userId, role)
 
+            if (isOwnerPath(path) && role != "ROLE_OWNER") {
+                return forbidden(exchange)
+            }
+
             val authed = sanitized.mutate()
                 .request(sanitized.request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Role", role)
                     .header("X-Internal-Sig", internalSig)
+                    .header("X-Gateway-Token", gatewayToken)
                     .build())
                 .build()
 
@@ -121,6 +140,9 @@ class JwtAuthGatewayFilter(
     private fun isPublicPath(path: String): Boolean =
         gatewayProps.publicPaths.any { pattern -> pathMatcher.match(pattern, path) }
 
+    private fun isOwnerPath(path: String): Boolean =
+        gatewayProps.ownerPaths.any { pattern -> pathMatcher.match(pattern, path) }
+
     private fun parseClaims(token: String): Claims =
         jwtParser.parseSignedClaims(token).payload
 
@@ -137,6 +159,14 @@ class JwtAuthGatewayFilter(
         response.statusCode = HttpStatus.UNAUTHORIZED
         response.headers.contentType = MediaType.APPLICATION_JSON
         val buffer = response.bufferFactory().wrap(UNAUTHORIZED_BODY)
+        return response.writeWith(Mono.just(buffer))
+    }
+
+    private fun forbidden(exchange: ServerWebExchange): Mono<Void> {
+        val response = exchange.response
+        response.statusCode = HttpStatus.FORBIDDEN
+        response.headers.contentType = MediaType.APPLICATION_JSON
+        val buffer = response.bufferFactory().wrap(FORBIDDEN_BODY)
         return response.writeWith(Mono.just(buffer))
     }
 }

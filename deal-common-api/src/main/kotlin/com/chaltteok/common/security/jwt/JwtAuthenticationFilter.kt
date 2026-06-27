@@ -1,5 +1,6 @@
 package com.chaltteok.common.security.jwt
 
+import jakarta.annotation.PostConstruct
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,18 +15,42 @@ import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-// 이 필터는 deal-gateway가 서명한 X-Internal-Sig 헤더를 검증하여 인증 컨텍스트를 설정한다.
+// 이 필터는 deal-gateway가 서명한 X-Gateway-Token 및 X-Internal-Sig 헤더를 검증하여 인증 컨텍스트를 설정한다.
 // 네트워크 정책(Security Group / K8s NetworkPolicy)으로 Gateway 외부에서 직접 접근을 차단해야 한다.
 @Component
 class JwtAuthenticationFilter(
     @Value("\${gateway.internal-secret}") private val internalSecret: String,
 ) : OncePerRequestFilter() {
 
+    private val gatewayToken: String by lazy {
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(internalSecret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        Base64.getEncoder().encodeToString(mac.doFinal("gateway-request".toByteArray(Charsets.UTF_8)))
+    }
+
+    @PostConstruct
+    fun validateConfig() {
+        // 애플리케이션 시작 시점에 gatewayToken 사전 초기화 — Fail-Fast
+        gatewayToken
+    }
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
+        val gwToken = request.getHeader("X-Gateway-Token")
+        if (!MessageDigest.isEqual(
+                gatewayToken.toByteArray(Charsets.UTF_8),
+                (gwToken ?: "").toByteArray(Charsets.UTF_8)
+            )
+        ) {
+            response.status = 403
+            response.contentType = "application/json;charset=UTF-8"
+            response.writer.write("""{"result":"ERROR","errorCode":"A005","errorMessage":"접근 권한이 없습니다."}""")
+            return
+        }
+
         val userId = request.getHeader("X-User-Id")?.toLongOrNull()
         val role = request.getHeader("X-User-Role")?.takeIf { it.isNotBlank() }
         val sig = request.getHeader("X-Internal-Sig")

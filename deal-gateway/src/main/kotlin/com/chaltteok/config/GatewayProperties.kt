@@ -7,4 +7,5 @@ class GatewayProperties(
     val internalSecret: String = "",
     val publicPaths: List<String> = emptyList(),
     val ssePaths: List<String> = emptyList(),
+    val ownerPaths: List<String> = emptyList(),
 )
