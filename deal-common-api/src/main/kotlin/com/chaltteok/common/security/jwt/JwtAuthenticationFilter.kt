@@ -30,7 +30,9 @@ class JwtAuthenticationFilter(
 
     @PostConstruct
     fun validateConfig() {
-        // 애플리케이션 시작 시점에 gatewayToken 사전 초기화 — Fail-Fast
+        require(internalSecret.toByteArray(Charsets.UTF_8).size >= 32) {
+            "gateway.internal-secret must be at least 32 bytes (current: ${internalSecret.toByteArray(Charsets.UTF_8).size})"
+        }
         gatewayToken
     }
 
