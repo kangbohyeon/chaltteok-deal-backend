@@ -7,5 +7,4 @@ data class OrderProcessCommand(
     val timeSaleStockId: Long,
     val quantity: Int,
     val paymentMethod: PaymentMethod,
-    val couponCode: String? = null,
 )

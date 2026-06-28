@@ -9,5 +9,4 @@ data class OrderPlacedEvent(
     val paymentMethod: PaymentMethod,
     @JsonProperty(defaultValue = "1")
     val quantity: Int = 1,
-    val couponCode: String? = null,
 )
