@@ -6,7 +6,13 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Entity
-@Table(name = "user_consent_history")
+@Table(
+    name = "user_consent_history",
+    indexes = [
+        Index(name = "idx_uch_user_consent_type", columnList = "user_id, consent_type"),
+        Index(name = "idx_uch_user_changed_at", columnList = "user_id, changed_at"),
+    ]
+)
 class UserConsentHistory(
     @Column(name = "user_id", nullable = false)
     val userId: Long,

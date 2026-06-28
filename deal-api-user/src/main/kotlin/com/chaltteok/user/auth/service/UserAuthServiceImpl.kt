@@ -113,17 +113,21 @@ class UserAuthServiceImpl(
         user.password = passwordEncoder.encode(request.password)
         user.phone = request.phone
         userRepository.save(user)
-        val agreedAt = LocalDateTime.now()
-        listOf(
+        val userId = user.id ?: error("User PK must not be null after save")
+        val agreedAt = LocalDateTime.now(java.time.ZoneOffset.UTC)
+        val consentPairs = listOf(
             ConsentType.TERMS     to true,
             ConsentType.PRIVACY   to true,
             ConsentType.AGE       to true,
             ConsentType.MARKETING to request.marketingAgreed,
             ConsentType.PUSH      to request.pushAgreed,
-        ).forEach { (type, agreed) ->
-            userConsentRepository.save(UserConsent(userId = user.id!!, consentType = type, agreed = agreed, agreedAt = agreedAt))
-            userConsentHistoryRepository.save(UserConsentHistory(userId = user.id!!, consentType = type, agreed = agreed, changedAt = agreedAt))
-        }
+        )
+        userConsentRepository.saveAll(consentPairs.map { (type, agreed) ->
+            UserConsent(userId = userId, consentType = type, agreed = agreed, agreedAt = agreedAt)
+        })
+        userConsentHistoryRepository.saveAll(consentPairs.map { (type, agreed) ->
+            UserConsentHistory(userId = userId, consentType = type, agreed = agreed, changedAt = agreedAt)
+        })
     }
 
     @Transactional(readOnly = true)
