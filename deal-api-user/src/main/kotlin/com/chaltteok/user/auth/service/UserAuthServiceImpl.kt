@@ -105,6 +105,11 @@ class UserAuthServiceImpl(
         )
         user.password = passwordEncoder.encode(request.password)
         user.phone = request.phone
+        user.termsAgreed = request.termsAgreed
+        user.privacyAgreed = request.privacyAgreed
+        user.ageAgreed = request.ageAgreed
+        user.marketingAgreed = request.marketingAgreed
+        user.pushAgreed = request.pushAgreed
         userRepository.save(user)
     }
 
