@@ -6,6 +6,11 @@ import com.chaltteok.common.security.dto.PasswordChangeReason
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.User
+import com.chaltteok.core.domain.UserConsent
+import com.chaltteok.core.domain.UserConsentHistory
+import com.chaltteok.core.domain.enums.ConsentType
+import com.chaltteok.core.repository.consent.UserConsentHistoryRepository
+import com.chaltteok.core.repository.consent.UserConsentRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
 import com.chaltteok.user.auth.ratelimit.AccountRecoveryRateLimiter
@@ -19,6 +24,8 @@ import java.time.LocalDateTime
 @Service
 class UserAuthServiceImpl(
     private val userRepository: UserRepository,
+    private val userConsentRepository: UserConsentRepository,
+    private val userConsentHistoryRepository: UserConsentHistoryRepository,
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
     private val passwordResetEmailProducer: PasswordResetEmailProducer,
@@ -105,18 +112,18 @@ class UserAuthServiceImpl(
         )
         user.password = passwordEncoder.encode(request.password)
         user.phone = request.phone
-        val agreedAt = LocalDateTime.now()
-        user.termsAgreed = request.termsAgreed
-        user.termsAgreedAt = agreedAt
-        user.privacyAgreed = request.privacyAgreed
-        user.privacyAgreedAt = agreedAt
-        user.ageAgreed = request.ageAgreed
-        user.ageAgreedAt = agreedAt
-        user.marketingAgreed = request.marketingAgreed
-        if (request.marketingAgreed) user.marketingAgreedAt = agreedAt
-        user.pushAgreed = request.pushAgreed
-        if (request.pushAgreed) user.pushAgreedAt = agreedAt
         userRepository.save(user)
+        val agreedAt = LocalDateTime.now()
+        listOf(
+            ConsentType.TERMS     to true,
+            ConsentType.PRIVACY   to true,
+            ConsentType.AGE       to true,
+            ConsentType.MARKETING to request.marketingAgreed,
+            ConsentType.PUSH      to request.pushAgreed,
+        ).forEach { (type, agreed) ->
+            userConsentRepository.save(UserConsent(userId = user.id!!, consentType = type, agreed = agreed, agreedAt = agreedAt))
+            userConsentHistoryRepository.save(UserConsentHistory(userId = user.id!!, consentType = type, agreed = agreed, changedAt = agreedAt))
+        }
     }
 
     @Transactional(readOnly = true)

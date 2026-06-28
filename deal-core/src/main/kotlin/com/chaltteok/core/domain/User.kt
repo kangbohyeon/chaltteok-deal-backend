@@ -51,34 +51,4 @@ class User(
 
     @Column(name = "require_password_change", nullable = false)
     var requirePasswordChange: Boolean = false
-
-    @Column(name = "terms_agreed", nullable = false)
-    var termsAgreed: Boolean = false
-
-    @Column(name = "terms_agreed_at")
-    var termsAgreedAt: LocalDateTime? = null
-
-    @Column(name = "privacy_agreed", nullable = false)
-    var privacyAgreed: Boolean = false
-
-    @Column(name = "privacy_agreed_at")
-    var privacyAgreedAt: LocalDateTime? = null
-
-    @Column(name = "age_agreed", nullable = false)
-    var ageAgreed: Boolean = false
-
-    @Column(name = "age_agreed_at")
-    var ageAgreedAt: LocalDateTime? = null
-
-    @Column(name = "marketing_agreed", nullable = false)
-    var marketingAgreed: Boolean = false
-
-    @Column(name = "marketing_agreed_at")
-    var marketingAgreedAt: LocalDateTime? = null
-
-    @Column(name = "push_agreed", nullable = false)
-    var pushAgreed: Boolean = false
-
-    @Column(name = "push_agreed_at")
-    var pushAgreedAt: LocalDateTime? = null
 }
