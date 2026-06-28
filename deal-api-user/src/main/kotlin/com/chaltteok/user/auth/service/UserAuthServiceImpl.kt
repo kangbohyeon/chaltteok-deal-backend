@@ -105,6 +105,17 @@ class UserAuthServiceImpl(
         )
         user.password = passwordEncoder.encode(request.password)
         user.phone = request.phone
+        val agreedAt = LocalDateTime.now()
+        user.termsAgreed = request.termsAgreed
+        user.termsAgreedAt = agreedAt
+        user.privacyAgreed = request.privacyAgreed
+        user.privacyAgreedAt = agreedAt
+        user.ageAgreed = request.ageAgreed
+        user.ageAgreedAt = agreedAt
+        user.marketingAgreed = request.marketingAgreed
+        if (request.marketingAgreed) user.marketingAgreedAt = agreedAt
+        user.pushAgreed = request.pushAgreed
+        if (request.pushAgreed) user.pushAgreedAt = agreedAt
         userRepository.save(user)
     }
 

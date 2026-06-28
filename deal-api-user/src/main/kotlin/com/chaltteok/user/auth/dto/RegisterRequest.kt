@@ -1,5 +1,6 @@
 package com.chaltteok.user.auth.dto
 
+import jakarta.validation.constraints.AssertTrue
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
@@ -16,4 +17,9 @@ class RegisterRequest(
     val password: String,
     @field:NotBlank val name: String,
     @field:NotBlank val phone: String,
+    @field:AssertTrue(message = "서비스 이용약관에 동의해야 합니다.") val termsAgreed: Boolean,
+    @field:AssertTrue(message = "개인정보 처리방침에 동의해야 합니다.") val privacyAgreed: Boolean,
+    @field:AssertTrue(message = "만 14세 이상이어야 가입할 수 있습니다.") val ageAgreed: Boolean,
+    val marketingAgreed: Boolean = false,
+    val pushAgreed: Boolean = false,
 )
