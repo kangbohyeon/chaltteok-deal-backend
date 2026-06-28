@@ -2,11 +2,15 @@ package com.chaltteok.core.domain
 
 import com.chaltteok.core.domain.enums.ConsentType
 import jakarta.persistence.*
+import java.util.UUID
 
 @Entity
 @Table(
     name = "tb_consent_conditions",
-    uniqueConstraints = [UniqueConstraint(name = "uk_consent_condition_type", columnNames = ["consent_type"])]
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_consent_condition_type", columnNames = ["consent_type"]),
+        UniqueConstraint(name = "uk_condition_uuid", columnNames = ["condition_uuid"]),
+    ]
 )
 class ConsentCondition(
     @Enumerated(EnumType.STRING)
@@ -29,4 +33,7 @@ class ConsentCondition(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     var id: Long? = null
+
+    @Column(name = "condition_uuid", nullable = false, length = 36)
+    val conditionUuid: String = UUID.randomUUID().toString()
 }

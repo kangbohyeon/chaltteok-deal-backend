@@ -6,4 +6,5 @@ import java.util.Optional
 
 interface OwnerRepository : JpaRepository<Owner, Long>, OwnerRepositoryCustom {
     fun findByUsername(username: String): Optional<Owner>
+    fun findByOwnerUuid(ownerUuid: String): Owner?
 }

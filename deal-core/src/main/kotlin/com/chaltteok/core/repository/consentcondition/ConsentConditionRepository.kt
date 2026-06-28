@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 interface ConsentConditionRepository : JpaRepository<ConsentCondition, Long> {
     fun findAllByOrderByDisplayOrderAsc(): List<ConsentCondition>
+    fun findByConditionUuid(conditionUuid: String): ConsentCondition?
 }

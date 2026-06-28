@@ -20,15 +20,15 @@ class AdminConditionController(
         return "condition/list"
     }
 
-    @PostMapping("/{id}/toggle-required")
-    fun toggleRequired(@PathVariable id: Long): String {
-        adminConditionService.toggleRequired(id)
+    @PostMapping("/{conditionUuid}/toggle-required")
+    fun toggleRequired(@PathVariable conditionUuid: String): String {
+        adminConditionService.toggleRequired(conditionUuid)
         return "redirect:/admin/conditions"
     }
 
-    @PostMapping("/{id}/toggle-active")
-    fun toggleActive(@PathVariable id: Long): String {
-        adminConditionService.toggleActive(id)
+    @PostMapping("/{conditionUuid}/toggle-active")
+    fun toggleActive(@PathVariable conditionUuid: String): String {
+        adminConditionService.toggleActive(conditionUuid)
         return "redirect:/admin/conditions"
     }
 }

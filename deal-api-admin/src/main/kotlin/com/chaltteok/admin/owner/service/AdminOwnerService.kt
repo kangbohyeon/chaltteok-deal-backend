@@ -6,5 +6,5 @@ import org.springframework.data.domain.Pageable
 
 interface AdminOwnerService {
     fun findAll(pageable: Pageable): Page<Owner>
-    fun findById(id: Long): Owner
+    fun findByOwnerUuid(ownerUuid: String): Owner
 }
