@@ -7,7 +7,7 @@ import java.util.*
 
 @Entity
 @Table(
-    name = "user_consents",
+    name = "tb_user_consents",
     uniqueConstraints = [UniqueConstraint(name = "uk_user_consent_type", columnNames = ["user_id", "consent_type"])]
 )
 class UserConsent(
