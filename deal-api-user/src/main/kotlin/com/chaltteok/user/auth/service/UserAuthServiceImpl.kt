@@ -112,6 +112,7 @@ class UserAuthServiceImpl(
         )
         user.password = passwordEncoder.encode(request.password)
         user.phone = request.phone
+        user.passwordChangedAt = LocalDateTime.now(java.time.ZoneOffset.UTC)
         userRepository.save(user)
         val userId = user.id ?: error("User PK must not be null after save")
         val agreedAt = LocalDateTime.now(java.time.ZoneOffset.UTC)
