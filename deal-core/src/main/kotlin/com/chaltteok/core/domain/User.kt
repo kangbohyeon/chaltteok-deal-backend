@@ -51,4 +51,21 @@ class User(
 
     @Column(name = "require_password_change", nullable = false)
     var requirePasswordChange: Boolean = false
+
+    // 동의 항목 (필수)
+    @Column(name = "terms_agreed", nullable = false)
+    var termsAgreed: Boolean = false
+
+    @Column(name = "privacy_agreed", nullable = false)
+    var privacyAgreed: Boolean = false
+
+    @Column(name = "age_agreed", nullable = false)
+    var ageAgreed: Boolean = false
+
+    // 동의 항목 (선택, 기본값 false)
+    @Column(name = "marketing_agreed", nullable = false)
+    var marketingAgreed: Boolean = false
+
+    @Column(name = "push_agreed", nullable = false)
+    var pushAgreed: Boolean = false
 }
