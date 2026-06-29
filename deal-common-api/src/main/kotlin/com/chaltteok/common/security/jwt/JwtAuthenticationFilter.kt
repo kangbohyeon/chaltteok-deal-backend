@@ -37,7 +37,7 @@ class JwtAuthenticationFilter(
     }
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean =
-        request.requestURI.startsWith("/admin")
+        request.requestURI == "/admin" || request.requestURI.startsWith("/admin/")
 
     override fun doFilterInternal(
         request: HttpServletRequest,
