@@ -36,6 +36,9 @@ class JwtAuthenticationFilter(
         gatewayToken
     }
 
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean =
+        request.requestURI.startsWith("/admin")
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
