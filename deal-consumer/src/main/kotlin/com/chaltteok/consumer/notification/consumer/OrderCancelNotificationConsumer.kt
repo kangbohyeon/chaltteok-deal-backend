@@ -30,6 +30,7 @@ class OrderCancelNotificationConsumer(
                 type = NotificationType.ORDER.name,
                 title = "주문이 취소되었습니다",
                 message = "${event.orderNumber} (%,d원)".format(event.totalAmount),
+                orderNumber = event.orderNumber,
             )
         )
     }
