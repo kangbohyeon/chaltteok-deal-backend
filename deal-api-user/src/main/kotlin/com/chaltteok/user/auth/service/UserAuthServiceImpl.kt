@@ -15,9 +15,12 @@ import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
 import com.chaltteok.user.auth.ratelimit.AccountRecoveryRateLimiter
 import com.chaltteok.user.infrastructure.kafka.PasswordResetEmailProducer
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 import java.security.SecureRandom
 import java.time.LocalDateTime
 
@@ -31,6 +34,7 @@ class UserAuthServiceImpl(
     private val passwordResetEmailProducer: PasswordResetEmailProducer,
     private val loginFailureRecorder: LoginFailureRecorder,
     private val accountRecoveryRateLimiter: AccountRecoveryRateLimiter,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) : UserAuthService {
 
     companion object {
@@ -46,7 +50,7 @@ class UserAuthServiceImpl(
         val user = userRepository.findByEmail(email)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
-        checkAccountLock(user)
+        resolveAccountLock(user)
 
         val storedPassword = user.password
             ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
@@ -78,13 +82,12 @@ class UserAuthServiceImpl(
         )
     }
 
-    private fun checkAccountLock(user: User) {
+    private fun resolveAccountLock(user: User) {
         val lockedAt = user.lockedAt ?: return
         if (lockedAt.isBefore(LocalDateTime.now().minusMinutes(LOCK_DURATION_MINUTES))) {
-            // 잠금 시간 경과 시 자동 해제
+            // 잠금 시간 경과 시 자동 해제 — @Transactional dirty checking이 처리하므로 명시적 save 불필요
             user.lockedAt = null
             user.loginFailedCount = 0
-            userRepository.save(user)
             return
         }
         throw BusinessException(AuthErrorCode.ACCOUNT_LOCKED)
@@ -159,7 +162,13 @@ class UserAuthServiceImpl(
         // 비밀번호 재설정 성공 시 계정 잠금 해제
         user.lockedAt = null
         user.loginFailedCount = 0
-        passwordResetEmailProducer.sendPasswordResetRequested(email, tempPassword)
+        // DB 커밋 이후에 Kafka 발행: 커밋 전 발행 시 DB 롤백 → 이메일 발송 불일치 방지
+        applicationEventPublisher.publishEvent(PasswordResetRequestedEvent(email, tempPassword))
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onPasswordResetRequested(event: PasswordResetRequestedEvent) {
+        passwordResetEmailProducer.sendPasswordResetRequested(event.email, event.tempPassword)
     }
 
     private fun maskEmail(email: String): String {
@@ -179,3 +188,6 @@ class UserAuthServiceImpl(
         return (1..TEMP_PASSWORD_LENGTH).map { chars[random.nextInt(chars.length)] }.joinToString("")
     }
 }
+
+/** DB 커밋 이후 Kafka 이메일 발행을 위한 Spring 애플리케이션 이벤트 */
+data class PasswordResetRequestedEvent(val email: String, val tempPassword: String)
