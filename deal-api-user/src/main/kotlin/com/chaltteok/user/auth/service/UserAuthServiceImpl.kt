@@ -9,18 +9,16 @@ import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.UserConsent
 import com.chaltteok.core.domain.UserConsentHistory
 import com.chaltteok.core.domain.enums.ConsentType
+import com.chaltteok.core.event.PasswordResetRequestedEvent
 import com.chaltteok.core.repository.consent.UserConsentHistoryRepository
 import com.chaltteok.core.repository.consent.UserConsentRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.auth.dto.RegisterRequest
 import com.chaltteok.user.auth.ratelimit.AccountRecoveryRateLimiter
-import com.chaltteok.user.infrastructure.kafka.PasswordResetEmailProducer
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.event.TransactionPhase
-import org.springframework.transaction.event.TransactionalEventListener
 import java.security.SecureRandom
 import java.time.LocalDateTime
 
@@ -31,7 +29,6 @@ class UserAuthServiceImpl(
     private val userConsentHistoryRepository: UserConsentHistoryRepository,
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
-    private val passwordResetEmailProducer: PasswordResetEmailProducer,
     private val loginFailureRecorder: LoginFailureRecorder,
     private val accountRecoveryRateLimiter: AccountRecoveryRateLimiter,
     private val applicationEventPublisher: ApplicationEventPublisher,
@@ -166,11 +163,6 @@ class UserAuthServiceImpl(
         applicationEventPublisher.publishEvent(PasswordResetRequestedEvent(email, tempPassword))
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    fun onPasswordResetRequested(event: PasswordResetRequestedEvent) {
-        passwordResetEmailProducer.sendPasswordResetRequested(event.email, event.tempPassword)
-    }
-
     private fun maskEmail(email: String): String {
         val atIndex = email.indexOf('@')
         // local part가 1자 이하면 마스킹 의미가 없으므로 원본 그대로 반환
@@ -188,6 +180,3 @@ class UserAuthServiceImpl(
         return (1..TEMP_PASSWORD_LENGTH).map { chars[random.nextInt(chars.length)] }.joinToString("")
     }
 }
-
-/** DB 커밋 이후 Kafka 이메일 발행을 위한 Spring 애플리케이션 이벤트 */
-data class PasswordResetRequestedEvent(val email: String, val tempPassword: String)
