@@ -3,9 +3,9 @@ package com.chaltteok.user.profile.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.core.domain.UserConsentHistory
-import com.chaltteok.core.domain.enums.ConsentType
 import com.chaltteok.core.repository.consent.UserConsentHistoryRepository
 import com.chaltteok.core.repository.consent.UserConsentRepository
+import com.chaltteok.core.repository.consentcondition.ConsentConditionRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.profile.dto.ChangePasswordRequest
 import com.chaltteok.user.profile.dto.ConsentUpdateRequest
@@ -17,14 +17,13 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
-private val REQUIRED_CONSENT_TYPES = setOf(ConsentType.TERMS, ConsentType.PRIVACY, ConsentType.AGE)
-
 @Service
 class UserProfileServiceImpl(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val userConsentRepository: UserConsentRepository,
     private val userConsentHistoryRepository: UserConsentHistoryRepository,
+    private val consentConditionRepository: ConsentConditionRepository,
 ) : UserProfileService {
 
     @Transactional(readOnly = true)
@@ -68,19 +67,23 @@ class UserProfileServiceImpl(
 
     @Transactional
     override fun updateConsent(userId: Long, request: ConsentUpdateRequest) {
-        if (!request.agreed && request.consentType in REQUIRED_CONSENT_TYPES) {
+        val condition = consentConditionRepository.findByConsentType(request.consentType)
+        if (!request.agreed && condition?.isRequired == true) {
             throw BusinessException(ConsentErrorCode.REQUIRED_CONSENT_CANNOT_BE_WITHDRAWN)
         }
+        val now = LocalDateTime.now()
         val consent = userConsentRepository.findByUserIdAndConsentType(userId, request.consentType)
             .orElseThrow { BusinessException(ConsentErrorCode.CONSENT_NOT_FOUND) }
         consent.agreed = request.agreed
-        consent.agreedAt = LocalDateTime.now()
+        if (request.agreed) {
+            consent.agreedAt = now
+        }
         userConsentHistoryRepository.save(
             UserConsentHistory(
                 userId = userId,
                 consentType = request.consentType,
                 agreed = request.agreed,
-                changedAt = LocalDateTime.now(),
+                changedAt = now,
             )
         )
     }
