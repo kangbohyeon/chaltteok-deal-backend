@@ -13,11 +13,13 @@ import com.chaltteok.owner.dashboard.dto.TopProductItem
 import com.chaltteok.owner.dashboard.dto.TopProductsResponse
 import com.chaltteok.owner.dashboard.enums.DashboardPeriod
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.TemporalAdjusters
 
 @Service
+@Transactional(readOnly = true)
 class DashboardServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
@@ -63,13 +65,15 @@ class DashboardServiceImpl(
 
     override fun getSalesTrend(from: LocalDate, to: LocalDate): SalesTrendResponse {
         validateDateRange(from, to)
-        val items = orderStatsRepository.findAllByStatDateBetween(from, to).map { stat ->
-            SalesTrendItem(
-                date = stat.statDate,
-                orderCount = stat.orderCount,
-                revenue = stat.totalRevenue,
-            )
-        }
+        val items = orderStatsRepository.findAllByStatDateBetween(from, to)
+            .sortedBy { it.statDate }
+            .map { stat ->
+                SalesTrendItem(
+                    date = stat.statDate,
+                    orderCount = stat.orderCount,
+                    revenue = stat.totalRevenue,
+                )
+            }
         return SalesTrendResponse(trend = items)
     }
 
