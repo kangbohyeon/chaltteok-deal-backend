@@ -2,6 +2,7 @@ package com.chaltteok.owner.dashboard.service
 
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
+import com.chaltteok.core.repository.orderstats.OrderStatsRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.owner.dashboard.dto.DashboardOverviewResponse
 import com.chaltteok.owner.dashboard.dto.HourlySalesItem
@@ -20,6 +21,7 @@ import java.time.temporal.TemporalAdjusters
 class DashboardServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
+    private val orderStatsRepository: OrderStatsRepository,
     private val userRepository: UserRepository,
 ) : DashboardService {
 
@@ -38,10 +40,10 @@ class DashboardServiceImpl(
         val fromDt = fromDate.atStartOfDay()
         val toDt = toDate.atTime(LocalTime.MAX)
 
-        val agg = orderRepository.findSalesPeriodAgg(fromDt, toDt)
-        val orderCount = agg.orderCount
-        val totalRevenue = agg.totalRevenue
-        val cancelledCount = agg.cancelledCount
+        val stats = orderStatsRepository.findAllByStatDateBetween(fromDate, toDate)
+        val totalRevenue = stats.sumOf { it.totalRevenue }
+        val orderCount = stats.sumOf { it.orderCount }
+        val cancelledCount = stats.sumOf { it.cancelledCount }
         val avgOrderValue = if (orderCount > 0) totalRevenue / orderCount else 0L
         val newCustomers = userRepository.countNewUsers(fromDt, toDt)
         val repeatCustomers = userRepository.countRepeatOrderUsers(fromDt, toDt)
@@ -61,13 +63,11 @@ class DashboardServiceImpl(
 
     override fun getSalesTrend(from: LocalDate, to: LocalDate): SalesTrendResponse {
         validateDateRange(from, to)
-        val fromDt = from.atStartOfDay()
-        val toDt = to.atTime(LocalTime.MAX)
-        val items = orderRepository.findDailySalesTrend(fromDt, toDt).map { agg ->
+        val items = orderStatsRepository.findAllByStatDateBetween(from, to).map { stat ->
             SalesTrendItem(
-                date = agg.date,
-                orderCount = agg.orderCount,
-                revenue = agg.revenue,
+                date = stat.statDate,
+                orderCount = stat.orderCount,
+                revenue = stat.totalRevenue,
             )
         }
         return SalesTrendResponse(trend = items)
