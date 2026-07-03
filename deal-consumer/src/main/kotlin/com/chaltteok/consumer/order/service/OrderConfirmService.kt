@@ -1,17 +1,20 @@
 package com.chaltteok.consumer.order.service
 
+import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.TimeSaleStock
 import com.chaltteok.core.domain.User
+import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentMethod
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
+import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -28,6 +31,7 @@ class OrderConfirmService(
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
     private val eventHistoryRepository: EventHistoryRepository,
+    private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
 ) {
     @Transactional
@@ -48,6 +52,15 @@ class OrderConfirmService(
         eventHistoryRepository.findFirstByUserAndTimeSaleStockAndOrderIsNull(user, timeSaleStock)?.let {
             it.order = order
         }
+
+        notificationRepository.save(
+            Notification(
+                type = NotificationType.ORDER.name,
+                title = "새 주문이 들어왔습니다",
+                message = "${order.orderNumber} (%,d원)".format(totalPrice),
+                orderNumber = order.orderNumber,
+            )
+        )
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_CONSUMER,

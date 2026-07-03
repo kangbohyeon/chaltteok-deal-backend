@@ -19,12 +19,12 @@ class OrderController(
     private val orderService: OrderService,
 ) {
     @PostMapping
-    fun placeOrderAsync(
+    fun placeOrder(
         authentication: Authentication,
         @RequestBody @Valid request: OrderRequest,
     ): ResponseEntity<ResponseDTO<OrderResponse>> {
         val userId = authentication.principal as Long
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
+        return ResponseEntity.status(HttpStatus.CREATED)
             .body(ResponseDTO.success(orderService.placeOrder(userId, request)))
     }
 
