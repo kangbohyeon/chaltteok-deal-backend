@@ -2,6 +2,7 @@ package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.enums.AuthErrorCode
+import com.chaltteok.core.domain.EventHistory
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
@@ -48,6 +49,9 @@ class OrderServiceImpl(
 
     @Transactional
     override fun placeOrder(userId: Long, request: OrderRequest): OrderResponse {
+        val user = userRepository.findById(userId)
+            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
+
         val timeSaleStock = timeSaleStockRepository.findByStockUuidWithLock(request.stockUuid)
             ?: throw BusinessException(OrderErrorCode.TIME_SALE_STOCK_NOT_FOUND)
 
@@ -69,11 +73,12 @@ class OrderServiceImpl(
 
         timeSaleStock.decrease(request.quantity)
 
-        val user = userRepository.findById(userId)
-            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
         val totalPrice = timeSaleStock.salePrice.toLong() * request.quantity
         val order = orderRepository.save(
             Order(user = user, totalPrice = totalPrice.toInt(), status = OrderStatus.COMPLETED)
+        )
+        eventHistoryRepository.save(
+            EventHistory(user = user, timeSaleStock = timeSaleStock, order = order)
         )
         orderItemRepository.save(
             OrderItem(order = order, product = timeSaleStock.product, quantity = request.quantity, price = timeSaleStock.salePrice)
