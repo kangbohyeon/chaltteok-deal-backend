@@ -17,22 +17,23 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/v1/owner/time-sale-stocks")
+@RequestMapping("/api/v1/owner")
 class TimeSaleStocksController(
     private val timeSaleStockService: TimeSaleStockService
 ) {
-    @GetMapping
+    // /daily-stocks 는 프론트엔드 기존 호출 경로 호환 alias (#89)
+    @GetMapping("/time-sale-stocks", "/daily-stocks")
     fun getTimeSaleStocks(): ResponseEntity<ResponseDTO<List<OwnerTimeSaleStockListResponse>>> =
         ResponseEntity.ok(ResponseDTO.success(timeSaleStockService.findAllTimeSaleStocks()))
 
-    @PostMapping
+    @PostMapping("/time-sale-stocks")
     fun createTimeSaleStock(@Valid @RequestBody request: TimeSaleStocksRegisterRequest)
             : ResponseEntity<ResponseDTO<Any>> {
         timeSaleStockService.registerTimeSaleStock(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDTO.success())
     }
 
-    @PutMapping("/{stockUuid}")
+    @PutMapping("/time-sale-stocks/{stockUuid}")
     fun updateTimeSaleStock(
         @PathVariable stockUuid: String,
         @Valid @RequestBody request: TimeSaleStocksRegisterRequest,
@@ -41,7 +42,7 @@ class TimeSaleStocksController(
         return ResponseEntity.ok(ResponseDTO.success())
     }
 
-    @DeleteMapping("/{stockUuid}")
+    @DeleteMapping("/time-sale-stocks/{stockUuid}")
     fun deleteTimeSaleStock(@PathVariable stockUuid: String): ResponseEntity<ResponseDTO<Any>> {
         timeSaleStockService.deleteTimeSaleStock(stockUuid)
         return ResponseEntity.ok(ResponseDTO.success())
