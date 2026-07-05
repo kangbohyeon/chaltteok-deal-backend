@@ -17,7 +17,8 @@ class EventHistoryDuplicateChecker(
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     fun isExceedingPurchaseLimit(user: User, timeSaleStock: TimeSaleStock, quantity: Int): Boolean {
         val maxPurchaseCount = timeSaleStock.maxPurchaseCount ?: return false
-        val participated = eventHistoryRepository.countByUser_IdAndTimeSaleStock_Id(user.id ?: return false, timeSaleStock.id)
+        val userId = user.id ?: error("인증된 사용자의 ID가 null입니다")
+        val participated = eventHistoryRepository.countByUser_IdAndTimeSaleStock_Id(userId, timeSaleStock.id)
         val exceeds = participated + quantity > maxPurchaseCount
         if (exceeds) {
             log.warn { "구매 한도 초과 감지 — userId=${user.id}, timeSaleStockId=${timeSaleStock.id}, participated=$participated, requested=$quantity, max=$maxPurchaseCount" }
