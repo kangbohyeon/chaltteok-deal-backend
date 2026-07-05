@@ -1,5 +1,6 @@
 package com.chaltteok.consumer.order.service
 
+import com.chaltteok.core.domain.EventHistory
 import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
@@ -48,10 +49,9 @@ class OrderConfirmService(
             Payment(order = order, amount = totalPrice.toInt(), status = PaymentStatus.SUCCESS, paymentMethod = paymentMethod.name, paidAt = LocalDateTime.now())
         )
 
-        // order 미설정인 EventHistory(DuplicateChecker가 생성)에 order 역참조 backfill
-        eventHistoryRepository.findFirstByUserAndTimeSaleStockAndOrderIsNull(user, timeSaleStock)?.let {
-            it.order = order
-        }
+        eventHistoryRepository.save(
+            EventHistory(user = user, timeSaleStock = timeSaleStock, order = order)
+        )
 
         notificationRepository.save(
             Notification(

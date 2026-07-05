@@ -9,14 +9,10 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import jakarta.persistence.UniqueConstraint
 import java.time.LocalDateTime
 
 @Entity
-@Table(
-    name = "tb_event_history",
-    uniqueConstraints = [UniqueConstraint(name = "uk_event_history_user_stock", columnNames = ["user_id", "stock_id"])]
-)
+@Table(name = "tb_event_history")
 class EventHistory(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
