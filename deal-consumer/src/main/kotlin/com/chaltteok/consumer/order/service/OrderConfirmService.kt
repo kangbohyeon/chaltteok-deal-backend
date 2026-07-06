@@ -8,7 +8,6 @@ import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.TimeSaleStock
 import com.chaltteok.core.domain.User
-import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentMethod
 import com.chaltteok.core.domain.enums.PaymentStatus
@@ -65,14 +64,7 @@ class OrderConfirmService(
             EventHistory(user = user, timeSaleStock = timeSaleStock, order = order)
         )
 
-        notificationRepository.save(
-            Notification(
-                type = NotificationType.ORDER.name,
-                title = "새 주문이 들어왔습니다",
-                message = "${order.orderNumber} (%,d원)".format(totalPrice),
-                orderNumber = order.orderNumber,
-            )
-        )
+        notificationRepository.save(Notification.forOrder(order.orderNumber, totalPrice))
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_CONSUMER,

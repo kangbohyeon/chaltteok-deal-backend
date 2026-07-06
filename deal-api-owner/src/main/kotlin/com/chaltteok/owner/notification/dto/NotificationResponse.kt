@@ -16,7 +16,7 @@ class NotificationResponse(
     companion object {
         fun from(notification: Notification) = NotificationResponse(
             notificationUuid = notification.notificationUuid,
-            type = notification.type,
+            type = notification.type.name,
             title = notification.title,
             message = notification.message,
             isRead = notification.isRead,

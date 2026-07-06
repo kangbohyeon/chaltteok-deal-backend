@@ -2,7 +2,6 @@ package com.chaltteok.owner.sse
 
 import com.chaltteok.core.common.KafkaTopics
 import com.chaltteok.core.domain.Notification
-import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.repository.notification.NotificationRepository
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -28,14 +27,7 @@ class OrderNotificationKafkaListener(
     fun consume(message: String) {
         val event = objectMapper.readValue(message, OrderCompletedEvent::class.java)
         // DB 저장 완료 후 SSE 브로드캐스트 — race condition 방지
-        notificationRepository.save(
-            Notification(
-                type = NotificationType.ORDER.name,
-                title = "새 주문이 들어왔습니다",
-                message = "${event.productName} (%,d원)".format(event.totalAmount),
-                orderNumber = event.orderNumber,
-            )
-        )
+        notificationRepository.save(Notification.forOrder(event.orderNumber, event.totalAmount))
         log.info { "주문 알림 저장 및 SSE 브로드캐스트 — orderNumber=${event.orderNumber}" }
         sseService.broadcast(
             eventName = "order-confirmed",

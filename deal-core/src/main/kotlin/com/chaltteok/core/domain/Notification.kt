@@ -1,13 +1,15 @@
 package com.chaltteok.core.domain
 
+import com.chaltteok.core.domain.enums.NotificationType
 import jakarta.persistence.*
 import java.util.UUID
 
 @Entity
 @Table(name = "tb_notifications", uniqueConstraints = [UniqueConstraint(name = "uk_notification_uuid", columnNames = ["notification_uuid"])])
 class Notification(
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 30)
-    val type: String,
+    val type: NotificationType,
 
     @Column(name = "title", nullable = false, length = 100)
     val title: String,
@@ -28,4 +30,13 @@ class Notification(
 
     @Column(name = "notification_uuid", nullable = false, length = 36)
     val notificationUuid: String = UUID.randomUUID().toString()
+
+    companion object {
+        fun forOrder(orderNumber: String, amount: Long) = Notification(
+            type = NotificationType.ORDER,
+            title = "새 주문이 들어왔습니다",
+            message = "$orderNumber (%,d원)".format(amount),
+            orderNumber = orderNumber,
+        )
+    }
 }
