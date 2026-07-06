@@ -7,7 +7,6 @@ import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.User
-import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
@@ -108,14 +107,7 @@ class CheckoutServiceImpl(
             }
         }
 
-        notificationRepository.save(
-            Notification(
-                type = NotificationType.ORDER.name,
-                title = "새 주문이 들어왔습니다",
-                message = "${savedOrder.orderNumber} (%,d원)".format(serverTotal),
-                orderNumber = savedOrder.orderNumber,
-            )
-        )
+        notificationRepository.save(Notification.forOrder(savedOrder.orderNumber, serverTotal))
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
