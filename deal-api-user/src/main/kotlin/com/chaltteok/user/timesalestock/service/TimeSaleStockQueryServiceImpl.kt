@@ -15,11 +15,11 @@ class TimeSaleStockQueryServiceImpl(
 ) : TimeSaleStockQueryService {
 
     @Transactional(readOnly = true)
-    override fun getOpenTimeSaleStocks(): List<OpenTimeSaleStockResponse> {
+    override fun getVisibleTimeSaleStocks(): List<OpenTimeSaleStockResponse> {
         val now = LocalDateTime.now()
         val legacy = timeSaleStockRepository.findAllByStatusWithProduct(TimeSaleStockStatus.OPEN)
             .filter { it.startAt == null }
-        val timeSale = timeSaleStockRepository.findActiveTimeSaleStocks(now)
+        val timeSale = timeSaleStockRepository.findVisibleTimeSaleStocks(now)
         return (legacy + timeSale).map { OpenTimeSaleStockResponse.from(it) }
     }
 
