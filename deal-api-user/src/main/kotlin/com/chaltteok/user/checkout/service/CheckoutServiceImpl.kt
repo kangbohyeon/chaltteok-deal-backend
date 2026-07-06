@@ -1,16 +1,19 @@
 package com.chaltteok.user.checkout.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.User
+import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.infrastructure.lock.DistributedLockService
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
+import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -35,6 +38,7 @@ class CheckoutServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
+    private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
     private val distributedLockService: DistributedLockService,
 ) : CheckoutService {
@@ -103,6 +107,15 @@ class CheckoutServiceImpl(
                 append(item.product.name)
             }
         }
+
+        notificationRepository.save(
+            Notification(
+                type = NotificationType.ORDER.name,
+                title = "새 주문이 들어왔습니다",
+                message = "${savedOrder.orderNumber} (%,d원)".format(serverTotal),
+                orderNumber = savedOrder.orderNumber,
+            )
+        )
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,

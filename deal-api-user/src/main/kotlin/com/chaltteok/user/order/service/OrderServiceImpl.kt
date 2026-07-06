@@ -3,10 +3,12 @@ package com.chaltteok.user.order.service
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.enums.AuthErrorCode
 import com.chaltteok.core.domain.EventHistory
+import com.chaltteok.core.domain.Notification
 import com.chaltteok.core.domain.Order
 import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.Payment
+import com.chaltteok.core.domain.enums.NotificationType
 import com.chaltteok.core.domain.enums.OrderStatus
 import com.chaltteok.core.domain.enums.PaymentStatus
 import com.chaltteok.core.domain.enums.TimeSaleStockStatus
@@ -15,6 +17,7 @@ import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.timesalestock.TimeSaleStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
+import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -44,6 +47,7 @@ class OrderServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
+    private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
 ) : OrderService {
 
@@ -85,6 +89,15 @@ class OrderServiceImpl(
         )
         paymentRepository.save(
             Payment(order = order, amount = totalPrice.toInt(), status = PaymentStatus.SUCCESS, paymentMethod = request.paymentMethod.name, paidAt = LocalDateTime.now())
+        )
+
+        notificationRepository.save(
+            Notification(
+                type = NotificationType.ORDER.name,
+                title = "새 주문이 들어왔습니다",
+                message = "${order.orderNumber} (%,d원)".format(totalPrice),
+                orderNumber = order.orderNumber,
+            )
         )
 
         outboxEventWriter.write(
