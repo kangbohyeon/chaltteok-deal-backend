@@ -15,7 +15,7 @@ class TimeSaleStockQueryController(
 ) {
     @GetMapping("/open")
     fun getOpenTimeSaleStocks(): ResponseDTO<List<OpenTimeSaleStockResponse>> =
-        ResponseDTO.success(timeSaleStockQueryService.getOpenTimeSaleStocks())
+        ResponseDTO.success(timeSaleStockQueryService.getVisibleTimeSaleStocks())
 
     @GetMapping("/participated")
     fun getParticipationCounts(authentication: Authentication): ResponseDTO<Map<String, Int>> {

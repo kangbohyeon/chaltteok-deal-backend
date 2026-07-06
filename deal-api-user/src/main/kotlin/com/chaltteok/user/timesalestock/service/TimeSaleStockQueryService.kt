@@ -3,6 +3,6 @@ package com.chaltteok.user.timesalestock.service
 import com.chaltteok.user.timesalestock.dto.OpenTimeSaleStockResponse
 
 interface TimeSaleStockQueryService {
-    fun getOpenTimeSaleStocks(): List<OpenTimeSaleStockResponse>
+    fun getVisibleTimeSaleStocks(): List<OpenTimeSaleStockResponse>
     fun getParticipationCounts(userId: Long): Map<String, Int>
 }

@@ -22,16 +22,17 @@ interface TimeSaleStockRepository : JpaRepository<TimeSaleStock, Long>, TimeSale
     @Query("SELECT ts FROM TimeSaleStock ts JOIN FETCH ts.product WHERE ts.status = :status")
     fun findAllByStatusWithProduct(status: TimeSaleStockStatus): List<TimeSaleStock>
 
+    // OPEN + SCHEDULED 상품 반환 (이슈 #95). endAt IS NULL은 무기한 세일 허용.
     @Query("""
         SELECT ts FROM TimeSaleStock ts JOIN FETCH ts.product
         WHERE ts.stockType = 'TIMESALE'
-        AND ts.endAt >= :now
+        AND (ts.endAt IS NULL OR ts.endAt >= :now)
         AND ts.status NOT IN (
             com.chaltteok.core.domain.enums.TimeSaleStockStatus.SOLD_OUT,
             com.chaltteok.core.domain.enums.TimeSaleStockStatus.CLOSED
         )
     """)
-    fun findActiveTimeSaleStocks(now: LocalDateTime): List<TimeSaleStock>
+    fun findVisibleTimeSaleStocks(now: LocalDateTime): List<TimeSaleStock>
 
     @Query("UPDATE TimeSaleStock ts SET ts.status = com.chaltteok.core.domain.enums.TimeSaleStockStatus.CLOSED WHERE ts.endAt < :now AND ts.status = com.chaltteok.core.domain.enums.TimeSaleStockStatus.OPEN")
     @Modifying
