@@ -25,7 +25,7 @@ interface TimeSaleStockRepository : JpaRepository<TimeSaleStock, Long>, TimeSale
     @Query("""
         SELECT ts FROM TimeSaleStock ts JOIN FETCH ts.product
         WHERE ts.stockType = 'TIMESALE'
-        AND ts.startAt <= :now AND ts.endAt >= :now
+        AND ts.endAt >= :now
         AND ts.status NOT IN (
             com.chaltteok.core.domain.enums.TimeSaleStockStatus.SOLD_OUT,
             com.chaltteok.core.domain.enums.TimeSaleStockStatus.CLOSED
