@@ -18,13 +18,18 @@ import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import com.chaltteok.user.checkout.dto.CheckoutRequest
 import com.chaltteok.user.checkout.dto.CheckoutResponse
 import com.chaltteok.user.checkout.enums.CheckoutErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 private val logger = KotlinLogging.logger {}
 
@@ -40,6 +45,7 @@ class CheckoutServiceImpl(
     private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
     private val distributedLockService: DistributedLockService,
+    private val orderStatsService: OrderStatsService,
 ) : CheckoutService {
 
     @Transactional
@@ -109,6 +115,12 @@ class CheckoutServiceImpl(
 
         notificationRepository.save(Notification.forOrder(savedOrder.orderNumber, serverTotal))
 
+        val statDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                orderStatsService.incrementOrderStats(statDate, serverTotal)
+            }
+        })
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
             aggregateId = savedOrder.orderNumber,
