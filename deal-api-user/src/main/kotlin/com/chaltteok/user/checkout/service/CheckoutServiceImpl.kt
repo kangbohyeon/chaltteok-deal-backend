@@ -14,6 +14,7 @@ import com.chaltteok.core.infrastructure.lock.DistributedLockService
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.product.ProductRepository
@@ -24,6 +25,7 @@ import com.chaltteok.user.checkout.enums.CheckoutErrorCode
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 private val logger = KotlinLogging.logger {}
@@ -40,6 +42,7 @@ class CheckoutServiceImpl(
     private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
     private val distributedLockService: DistributedLockService,
+    private val orderStatsService: OrderStatsService,
 ) : CheckoutService {
 
     @Transactional
@@ -109,6 +112,7 @@ class CheckoutServiceImpl(
 
         notificationRepository.save(Notification.forOrder(savedOrder.orderNumber, serverTotal))
 
+        orderStatsService.incrementOrderStats(LocalDate.now(), serverTotal)
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
             aggregateId = savedOrder.orderNumber,

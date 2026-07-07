@@ -21,6 +21,7 @@ import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
+import com.chaltteok.core.service.orderstats.OrderStatsService
 import com.chaltteok.user.order.dto.OrderHistoryItemResponse
 import com.chaltteok.user.order.dto.OrderHistoryPageResponse
 import com.chaltteok.user.order.dto.OrderHistoryResponse
@@ -48,6 +49,7 @@ class OrderServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
+    private val orderStatsService: OrderStatsService,
 ) : OrderService {
 
     @Transactional
@@ -106,6 +108,7 @@ class OrderServiceImpl(
             )
         )
 
+        orderStatsService.incrementOrderStats(LocalDate.now(), totalPrice)
         logger.info { "타임세일 동기 주문 완료 — orderNumber=${order.orderNumber}, userId=$userId, stockUuid=${request.stockUuid}" }
         return OrderResponse.completed(order.orderNumber, totalPrice)
     }
@@ -127,6 +130,7 @@ class OrderServiceImpl(
         val orderId = order.id ?: error("Order ID null")
         paymentRepository.findByOrderId(orderId)?.cancel()
 
+        orderStatsService.incrementCancelStats(LocalDate.now())
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
             aggregateId = order.orderNumber,
