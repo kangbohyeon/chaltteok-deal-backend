@@ -23,8 +23,11 @@ import com.chaltteok.core.service.orderstats.OrderStatsService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 private val log = KotlinLogging.logger {}
 
@@ -83,7 +86,12 @@ class OrderConfirmService(
             )
         )
 
-        orderStatsService.incrementOrderStats(LocalDate.now(), totalPrice)
+        val statDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                orderStatsService.incrementOrderStats(statDate, totalPrice)
+            }
+        })
         log.info { "주문 확정 완료 — orderId=${order.id}, userId=${user.id}, timeSaleStockId=${timeSaleStock.id}" }
     }
 }
