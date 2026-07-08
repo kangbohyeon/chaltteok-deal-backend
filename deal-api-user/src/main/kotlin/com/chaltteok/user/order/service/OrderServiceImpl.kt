@@ -80,6 +80,8 @@ class OrderServiceImpl(
         }
 
         timeSaleStock.decrease(request.quantity)
+        val stockExhaustedByThisOrder = timeSaleStock.remainStock == 0
+        val productNameForNotify = timeSaleStock.product.name
 
         val totalPrice = timeSaleStock.salePrice.toLong() * request.quantity
         val order = orderRepository.save(
@@ -114,6 +116,9 @@ class OrderServiceImpl(
         val statDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
+                if (stockExhaustedByThisOrder) {
+                    notificationRepository.save(Notification.forSoldOut(productNameForNotify))
+                }
                 orderStatsService.incrementOrderStats(statDate, totalPrice)
             }
         })

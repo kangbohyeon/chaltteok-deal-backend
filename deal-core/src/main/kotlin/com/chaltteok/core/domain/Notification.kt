@@ -38,5 +38,11 @@ class Notification(
             message = "$orderNumber (%,d원)".format(amount),
             orderNumber = orderNumber,
         )
+
+        fun forSoldOut(productName: String) = Notification(
+            type = NotificationType.SOLD_OUT,
+            title = "재고가 소진되었습니다",
+            message = productName,
+        )
     }
 }
