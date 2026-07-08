@@ -16,8 +16,8 @@ class StockDecrementHelper(
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun tryDecrement(timeSaleStockId: Long, quantity: Int): Boolean {
-        val stock = timeSaleStockRepository.findById(timeSaleStockId)
-            .orElseThrow { OrderProcessingException("TimeSaleStock not found: $timeSaleStockId") }
+        val stock = timeSaleStockRepository.findByIdWithProduct(timeSaleStockId)
+            ?: throw OrderProcessingException("TimeSaleStock not found: $timeSaleStockId")
         if (stock.remainStock < quantity) {
             if (stock.remainStock == 0) stock.status = TimeSaleStockStatus.SOLD_OUT
             return false
@@ -25,7 +25,7 @@ class StockDecrementHelper(
         stock.remainStock -= quantity
         if (stock.remainStock == 0) {
             stock.status = TimeSaleStockStatus.SOLD_OUT
-            notificationRepository.save(Notification.forSoldOut(stock.product.name, stock.stockUuid))
+            notificationRepository.save(Notification.forSoldOut(stock.product.name))
         }
         return true
     }

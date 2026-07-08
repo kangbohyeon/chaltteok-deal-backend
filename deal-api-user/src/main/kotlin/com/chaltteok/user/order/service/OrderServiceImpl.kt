@@ -80,7 +80,8 @@ class OrderServiceImpl(
         }
 
         timeSaleStock.decrease(request.quantity)
-        val soldOut = timeSaleStock.remainStock == 0
+        val stockExhaustedByThisOrder = timeSaleStock.remainStock == 0
+        val productNameForNotify = timeSaleStock.product.name
 
         val totalPrice = timeSaleStock.salePrice.toLong() * request.quantity
         val order = orderRepository.save(
@@ -97,9 +98,6 @@ class OrderServiceImpl(
         )
 
         notificationRepository.save(Notification.forOrder(order.orderNumber, totalPrice))
-        if (soldOut) {
-            notificationRepository.save(Notification.forSoldOut(timeSaleStock.product.name, timeSaleStock.stockUuid))
-        }
 
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
@@ -118,6 +116,9 @@ class OrderServiceImpl(
         val statDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
+                if (stockExhaustedByThisOrder) {
+                    notificationRepository.save(Notification.forSoldOut(productNameForNotify))
+                }
                 orderStatsService.incrementOrderStats(statDate, totalPrice)
             }
         })

@@ -39,10 +39,10 @@ class Notification(
             orderNumber = orderNumber,
         )
 
-        fun forSoldOut(productName: String, stockUuid: String) = Notification(
+        fun forSoldOut(productName: String) = Notification(
             type = NotificationType.SOLD_OUT,
             title = "재고가 소진되었습니다",
-            message = "$productName ($stockUuid)",
+            message = productName,
         )
     }
 }
