@@ -1,6 +1,7 @@
 package com.chaltteok.owner.product.controller
 
 import com.chaltteok.common.dto.ResponseDTO
+import com.chaltteok.owner.product.dto.ProductDetailResponse
 import com.chaltteok.owner.product.dto.ProductListResponse
 import com.chaltteok.owner.product.dto.ProductRegisterRequest
 import com.chaltteok.owner.product.dto.ProductUpdateRequest
@@ -19,6 +20,10 @@ class ProductController(private val productService: ProductService) {
     @GetMapping
     fun getProducts(): ResponseEntity<ResponseDTO<List<ProductListResponse>>> =
         ResponseEntity.ok(ResponseDTO.success(productService.getProducts()))
+
+    @GetMapping("/{productUuid}")
+    fun getProduct(@PathVariable productUuid: String): ResponseEntity<ResponseDTO<ProductDetailResponse>> =
+        ResponseEntity.ok(ResponseDTO.success(productService.getProduct(productUuid)))
 
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun createProduct(

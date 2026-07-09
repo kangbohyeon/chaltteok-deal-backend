@@ -5,6 +5,7 @@ import com.chaltteok.core.cache.CacheNames
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
+import com.chaltteok.owner.product.dto.ProductDetailResponse
 import com.chaltteok.owner.product.dto.ProductListResponse
 import com.chaltteok.owner.product.dto.ProductRegisterRequest
 import com.chaltteok.owner.product.dto.ProductUpdateRequest
@@ -30,6 +31,13 @@ class ProductServiceImpl(
     @Transactional(readOnly = true)
     override fun getProducts(): List<ProductListResponse> =
         productRepository.findAllWithOption().map { ProductListResponse.from(it) }
+
+    @Transactional(readOnly = true)
+    override fun getProduct(productUuid: String): ProductDetailResponse {
+        val row = productRepository.findByProductUuidWithOption(productUuid)
+            ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
+        return ProductDetailResponse.from(row)
+    }
 
     @Caching(evict = [
         CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),

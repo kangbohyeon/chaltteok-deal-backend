@@ -40,6 +40,35 @@ class ProductRepositoryImpl(private val jpaQueryFactory: JPAQueryFactory) : Prod
             .fetch()
     }
 
+    override fun findByProductUuidWithOption(productUuid: String): ProductWithOptionRow? {
+        val qProduct = QProduct.product
+        val qOption = QProductOption.productOption
+        return jpaQueryFactory
+            .select(
+                Projections.constructor(
+                    ProductWithOptionRow::class.java,
+                    qProduct.id,
+                    qProduct.productUuid,
+                    qProduct.name,
+                    qProduct.description,
+                    qProduct.imageUrl,
+                    qProduct.price,
+                    qProduct.isActive,
+                    qProduct.isSoldOut,
+                    qProduct.isRecommended,
+                    qProduct.stockQuantity,
+                    qProduct.currentStock,
+                    qProduct.displayOrder,
+                    qOption.optionUuid,
+                    qOption.price,
+                )
+            )
+            .from(qProduct)
+            .join(qOption).on(qOption.product.id.eq(qProduct.id))
+            .where(qProduct.productUuid.eq(productUuid))
+            .fetchOne()
+    }
+
     override fun searchByKeyword(keyword: String): List<Product> {
         val qProduct = QProduct.product
         return jpaQueryFactory
