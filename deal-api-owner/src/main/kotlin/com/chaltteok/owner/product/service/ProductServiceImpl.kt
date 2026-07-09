@@ -5,6 +5,7 @@ import com.chaltteok.core.cache.CacheNames
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.product.ProductRepository
 import com.chaltteok.core.repository.productoption.ProductOptionRepository
+import com.chaltteok.owner.product.dto.ProductDetailResponse
 import com.chaltteok.owner.product.dto.ProductListResponse
 import com.chaltteok.owner.product.dto.ProductRegisterRequest
 import com.chaltteok.owner.product.dto.ProductUpdateRequest
@@ -12,6 +13,7 @@ import com.chaltteok.owner.product.enums.ProductErrorCode
 import com.chaltteok.owner.product.util.LocalFileUploader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.cache.annotation.Caching
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -30,6 +32,14 @@ class ProductServiceImpl(
     @Transactional(readOnly = true)
     override fun getProducts(): List<ProductListResponse> =
         productRepository.findAllWithOption().map { ProductListResponse.from(it) }
+
+    @Cacheable(value = [CacheNames.PRODUCT], key = "#productUuid")
+    @Transactional(readOnly = true)
+    override fun getProduct(productUuid: String): ProductDetailResponse {
+        val row = productRepository.findByProductUuidWithOption(productUuid)
+            ?: throw BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)
+        return ProductDetailResponse.from(row)
+    }
 
     @Caching(evict = [
         CacheEvict(value = [CacheNames.PRODUCT_LIST], allEntries = true),
