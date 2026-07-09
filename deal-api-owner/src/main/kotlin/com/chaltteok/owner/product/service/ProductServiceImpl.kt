@@ -13,6 +13,7 @@ import com.chaltteok.owner.product.enums.ProductErrorCode
 import com.chaltteok.owner.product.util.LocalFileUploader
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.cache.annotation.Caching
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,6 +33,7 @@ class ProductServiceImpl(
     override fun getProducts(): List<ProductListResponse> =
         productRepository.findAllWithOption().map { ProductListResponse.from(it) }
 
+    @Cacheable(value = [CacheNames.PRODUCT], key = "#productUuid")
     @Transactional(readOnly = true)
     override fun getProduct(productUuid: String): ProductDetailResponse {
         val row = productRepository.findByProductUuidWithOption(productUuid)
