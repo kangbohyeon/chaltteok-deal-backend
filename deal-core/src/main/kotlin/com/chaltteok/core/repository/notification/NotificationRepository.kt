@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.Query
 
 interface NotificationRepository : JpaRepository<Notification, Long> {
     fun findTop50ByOrderByCreatedAtDesc(): List<Notification>
+    fun findByNotificationUuid(notificationUuid: String): Notification?
     fun countByIsReadFalse(): Long
+    fun deleteByNotificationUuid(notificationUuid: String): Int
 
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.isRead = false")
