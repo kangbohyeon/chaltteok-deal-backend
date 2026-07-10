@@ -8,4 +8,5 @@ import java.time.LocalDate
 interface OwnerOrderService {
     fun getOrderDetail(orderNumber: String): OwnerOrderDetailResponse
     fun getOrders(status: OrderStatus?, startDate: LocalDate?, endDate: LocalDate?, page: Int, size: Int): OwnerOrderListResponse
+    fun cancelOrder(orderNumber: String)
 }

@@ -6,6 +6,7 @@ import com.chaltteok.owner.order.dto.OwnerOrderDetailResponse
 import com.chaltteok.owner.order.dto.OwnerOrderListResponse
 import com.chaltteok.owner.order.service.OwnerOrderService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -29,4 +30,10 @@ class OwnerOrderController(private val ownerOrderService: OwnerOrderService) {
     @GetMapping("/{orderNumber}")
     fun getOrderDetail(@PathVariable orderNumber: String): ResponseDTO<OwnerOrderDetailResponse> =
         ResponseDTO.success(ownerOrderService.getOrderDetail(orderNumber))
+
+    @PatchMapping("/{orderNumber}/cancel")
+    fun cancelOrder(@PathVariable orderNumber: String): ResponseDTO<Unit> {
+        ownerOrderService.cancelOrder(orderNumber)
+        return ResponseDTO.success(Unit)
+    }
 }
