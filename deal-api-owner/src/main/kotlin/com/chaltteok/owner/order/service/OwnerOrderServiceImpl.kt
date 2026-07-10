@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 @Service
@@ -84,6 +85,9 @@ class OwnerOrderServiceImpl(
         if (order.status == OrderStatus.CANCELLED) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 취소된 주문입니다: $orderNumber")
         }
+        if (!order.isCancellable()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "취소할 수 없는 주문 상태입니다: ${order.status}")
+        }
 
         val orderId = order.id ?: error("Order ID null")
         order.cancel()
@@ -98,7 +102,7 @@ class OwnerOrderServiceImpl(
                 orderNumber = order.orderNumber,
                 userName = order.user.nickname,
                 totalAmount = order.totalPrice.toLong(),
-                cancelledAt = LocalDateTime.now(),
+                cancelledAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")),
             )
         )
     }
