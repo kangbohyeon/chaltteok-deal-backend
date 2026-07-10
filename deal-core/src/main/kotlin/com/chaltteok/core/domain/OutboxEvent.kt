@@ -34,6 +34,7 @@ class OutboxEvent(
         const val STATUS_FAILED = "FAILED"
 
         const val SOURCE_API_USER = "API_USER"
+        const val SOURCE_API_OWNER = "API_OWNER"
         const val SOURCE_CONSUMER = "CONSUMER"
 
         const val TYPE_ORDER_COMPLETED = "ORDER_COMPLETED"
