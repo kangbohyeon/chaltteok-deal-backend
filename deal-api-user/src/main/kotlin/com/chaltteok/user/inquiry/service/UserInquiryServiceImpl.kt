@@ -8,10 +8,9 @@ import com.chaltteok.core.repository.inquiry.InquiryRepository
 import com.chaltteok.user.file.enums.FileErrorCode
 import com.chaltteok.user.inquiry.dto.InquiryRequest
 import com.chaltteok.user.inquiry.dto.InquiryResponse
-import org.springframework.http.HttpStatus
+import com.chaltteok.user.inquiry.enums.InquiryErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.server.ResponseStatusException
 
 @Service
 class UserInquiryServiceImpl(
@@ -55,12 +54,12 @@ class UserInquiryServiceImpl(
     @Transactional
     override fun delete(userId: Long, inquiryUuid: String) {
         val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "문의를 찾을 수 없습니다: $inquiryUuid")
+            ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
         if (inquiry.userId != userId) {
-            throw ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 문의만 삭제할 수 있습니다.")
+            throw BusinessException(InquiryErrorCode.INQUIRY_ACCESS_DENIED)
         }
         if (inquiry.status != "PENDING") {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "답변 완료된 문의는 삭제할 수 없습니다.")
+            throw BusinessException(InquiryErrorCode.INQUIRY_ALREADY_ANSWERED)
         }
         attachmentRepository.deleteByReferenceUuidAndAttachmentType(inquiryUuid, AttachmentType.INQUIRY.name)
         inquiryRepository.delete(inquiry)
