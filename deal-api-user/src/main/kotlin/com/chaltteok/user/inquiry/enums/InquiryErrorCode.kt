@@ -8,4 +8,6 @@ enum class InquiryErrorCode(
     override val message: String,
 ) : ErrorCode {
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의를 찾을 수 없습니다."),
+    INQUIRY_ACCESS_DENIED(HttpStatus.FORBIDDEN, "본인의 문의만 삭제할 수 있습니다."),
+    INQUIRY_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "답변 완료된 문의는 삭제할 수 없습니다."),
 }

@@ -8,6 +8,7 @@ import com.chaltteok.core.repository.inquiry.InquiryRepository
 import com.chaltteok.user.file.enums.FileErrorCode
 import com.chaltteok.user.inquiry.dto.InquiryRequest
 import com.chaltteok.user.inquiry.dto.InquiryResponse
+import com.chaltteok.user.inquiry.enums.InquiryErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -48,5 +49,19 @@ class UserInquiryServiceImpl(
             }
         }
         return InquiryResponse.from(inquiry)
+    }
+
+    @Transactional
+    override fun delete(userId: Long, inquiryUuid: String) {
+        val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
+            ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
+        if (inquiry.userId != userId) {
+            throw BusinessException(InquiryErrorCode.INQUIRY_ACCESS_DENIED)
+        }
+        if (inquiry.status != "PENDING") {
+            throw BusinessException(InquiryErrorCode.INQUIRY_ALREADY_ANSWERED)
+        }
+        attachmentRepository.deleteByReferenceUuidAndAttachmentType(inquiryUuid, AttachmentType.INQUIRY.name)
+        inquiryRepository.delete(inquiry)
     }
 }
