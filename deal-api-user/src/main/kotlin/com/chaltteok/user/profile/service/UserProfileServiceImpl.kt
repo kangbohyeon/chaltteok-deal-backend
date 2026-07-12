@@ -17,7 +17,10 @@ import com.chaltteok.user.profile.enums.ProfileErrorCode
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 @Service
 class UserProfileServiceImpl(
@@ -101,7 +104,11 @@ class UserProfileServiceImpl(
                 throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
             }
         }
-        user.withdrawnAt = LocalDateTime.now()
-        jwtTokenProvider.deleteRefreshToken(userId, "ROLE_USER")
+        user.withdrawnAt = LocalDateTime.now(ZoneOffset.UTC)
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                jwtTokenProvider.deleteRefreshToken(userId, "ROLE_USER")
+            }
+        })
     }
 }
