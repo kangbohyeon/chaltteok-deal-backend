@@ -49,6 +49,8 @@ class UserAuthServiceImpl(
 
         resolveAccountLock(user)
 
+        if (user.withdrawnAt != null) throw BusinessException(AuthErrorCode.WITHDRAWN_ACCOUNT)
+
         val storedPassword = user.password
             ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
 
