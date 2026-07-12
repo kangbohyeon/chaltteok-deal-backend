@@ -4,6 +4,7 @@ import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.dto.LoginResponseDto
 import com.chaltteok.common.security.dto.PasswordChangeReason
 import com.chaltteok.common.security.enums.AuthErrorCode
+import com.chaltteok.user.profile.enums.ProfileErrorCode
 import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.User
 import com.chaltteok.core.domain.UserConsent
@@ -48,6 +49,8 @@ class UserAuthServiceImpl(
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
         resolveAccountLock(user)
+
+        if (user.withdrawnAt != null) throw BusinessException(ProfileErrorCode.WITHDRAWN_ACCOUNT)
 
         val storedPassword = user.password
             ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)

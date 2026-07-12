@@ -10,4 +10,5 @@ interface UserProfileService {
     fun updateNickname(userId: Long, request: UpdateNicknameRequest): UserProfileResponse
     fun changePassword(userId: Long, request: ChangePasswordRequest)
     fun updateConsent(userId: Long, request: ConsentUpdateRequest)
+    fun withdraw(userId: Long, currentPassword: String?)
 }

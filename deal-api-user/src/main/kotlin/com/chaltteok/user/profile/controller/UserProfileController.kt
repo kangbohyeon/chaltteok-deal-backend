@@ -5,8 +5,10 @@ import com.chaltteok.user.profile.dto.ChangePasswordRequest
 import com.chaltteok.user.profile.dto.ConsentUpdateRequest
 import com.chaltteok.user.profile.dto.UpdateNicknameRequest
 import com.chaltteok.user.profile.dto.UserProfileResponse
+import com.chaltteok.user.profile.dto.WithdrawRequest
 import com.chaltteok.user.profile.service.UserProfileService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
@@ -47,6 +49,17 @@ class UserProfileController(
     ): ResponseDTO<Unit> {
         val userId = authentication.principal as Long
         userProfileService.updateConsent(userId, request)
+        return ResponseDTO.success(Unit)
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun withdraw(
+        authentication: Authentication,
+        @RequestBody(required = false) request: WithdrawRequest?,
+    ): ResponseDTO<Unit> {
+        val userId = authentication.principal as Long
+        userProfileService.withdraw(userId, request?.currentPassword)
         return ResponseDTO.success(Unit)
     }
 }

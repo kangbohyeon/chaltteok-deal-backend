@@ -2,6 +2,7 @@ package com.chaltteok.user.profile.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.enums.AuthErrorCode
+import com.chaltteok.common.security.jwt.JwtTokenProvider
 import com.chaltteok.core.domain.UserConsentHistory
 import com.chaltteok.core.repository.consent.UserConsentHistoryRepository
 import com.chaltteok.core.repository.consent.UserConsentRepository
@@ -12,6 +13,7 @@ import com.chaltteok.user.profile.dto.ConsentUpdateRequest
 import com.chaltteok.user.profile.dto.UpdateNicknameRequest
 import com.chaltteok.user.profile.dto.UserProfileResponse
 import com.chaltteok.user.profile.enums.ConsentErrorCode
+import com.chaltteok.user.profile.enums.ProfileErrorCode
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,6 +26,7 @@ class UserProfileServiceImpl(
     private val userConsentRepository: UserConsentRepository,
     private val userConsentHistoryRepository: UserConsentHistoryRepository,
     private val consentConditionRepository: ConsentConditionRepository,
+    private val jwtTokenProvider: JwtTokenProvider,
 ) : UserProfileService {
 
     @Transactional(readOnly = true)
@@ -86,5 +89,19 @@ class UserProfileServiceImpl(
                 changedAt = now,
             )
         )
+    }
+
+    @Transactional
+    override fun withdraw(userId: Long, currentPassword: String?) {
+        val user = userRepository.findById(userId)
+            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
+        if (user.withdrawnAt != null) throw BusinessException(ProfileErrorCode.ALREADY_WITHDRAWN)
+        if (user.password != null) {
+            if (currentPassword.isNullOrBlank() || !passwordEncoder.matches(currentPassword, user.password)) {
+                throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
+            }
+        }
+        user.withdrawnAt = LocalDateTime.now()
+        jwtTokenProvider.deleteRefreshToken(userId, "ROLE_USER")
     }
 }
