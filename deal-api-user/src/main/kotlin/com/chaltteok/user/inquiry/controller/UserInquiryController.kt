@@ -8,6 +8,8 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PathVariable
 
 @RestController
 @RequestMapping("/api/v1/user/inquiries")
@@ -27,5 +29,16 @@ class UserInquiryController(private val userInquiryService: UserInquiryService) 
     ): ResponseDTO<InquiryResponse> {
         val userId = authentication.principal as Long
         return ResponseDTO.success(userInquiryService.create(userId, request))
+    }
+
+    @DeleteMapping("/{inquiryUuid}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun delete(
+        authentication: Authentication,
+        @PathVariable inquiryUuid: String,
+    ): ResponseDTO<Unit> {
+        val userId = authentication.principal as Long
+        userInquiryService.delete(userId, inquiryUuid)
+        return ResponseDTO.success(Unit)
     }
 }
