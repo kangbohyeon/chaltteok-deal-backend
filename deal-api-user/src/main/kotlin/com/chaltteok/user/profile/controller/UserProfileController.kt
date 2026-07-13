@@ -4,6 +4,7 @@ import com.chaltteok.common.dto.ResponseDTO
 import com.chaltteok.user.profile.dto.ChangePasswordRequest
 import com.chaltteok.user.profile.dto.ConsentUpdateRequest
 import com.chaltteok.user.profile.dto.UpdateNicknameRequest
+import com.chaltteok.user.profile.dto.UserConsentResponse
 import com.chaltteok.user.profile.dto.UserProfileResponse
 import com.chaltteok.user.profile.dto.WithdrawRequest
 import com.chaltteok.user.profile.service.UserProfileService
@@ -40,6 +41,12 @@ class UserProfileController(
         val userId = authentication.principal as Long
         userProfileService.changePassword(userId, request)
         return ResponseDTO.success(Unit)
+    }
+
+    @GetMapping("/consents")
+    fun getConsents(authentication: Authentication): ResponseDTO<List<UserConsentResponse>> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userProfileService.getConsents(userId))
     }
 
     @PatchMapping("/consents")
