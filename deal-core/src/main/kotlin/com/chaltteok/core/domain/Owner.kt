@@ -37,4 +37,7 @@ class Owner(
 
     @Column(name = "password_changed_at")
     var passwordChangedAt: LocalDateTime? = null
+
+    @Column(name = "withdrawn_at")
+    var withdrawnAt: LocalDateTime? = null
 }
