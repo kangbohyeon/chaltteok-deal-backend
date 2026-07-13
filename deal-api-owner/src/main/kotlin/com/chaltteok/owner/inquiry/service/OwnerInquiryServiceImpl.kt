@@ -47,6 +47,17 @@ class OwnerInquiryServiceImpl(
         )
     }
 
+    @Transactional(readOnly = true)
+    override fun getInquiry(inquiryUuid: String): OwnerInquiryResponse {
+        val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
+            ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
+        val userUuid = userRepository.findById(inquiry.userId).map { it.userUuid }.orElse("")
+        val attachments = attachmentRepository.findAllByReferenceUuidInAndAttachmentType(
+            listOf(inquiryUuid), AttachmentType.INQUIRY.name
+        )
+        return OwnerInquiryResponse.from(inquiry, userUuid, attachments)
+    }
+
     @Transactional
     override fun answer(inquiryUuid: String, request: AnswerRequest) {
         val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
