@@ -11,6 +11,7 @@ import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.profile.dto.ChangePasswordRequest
 import com.chaltteok.user.profile.dto.ConsentUpdateRequest
 import com.chaltteok.user.profile.dto.UpdateNicknameRequest
+import com.chaltteok.user.profile.dto.UserConsentResponse
 import com.chaltteok.user.profile.dto.UserProfileResponse
 import com.chaltteok.user.profile.enums.ConsentErrorCode
 import com.chaltteok.user.profile.enums.ProfileErrorCode
@@ -92,6 +93,14 @@ class UserProfileServiceImpl(
                 changedAt = now,
             )
         )
+    }
+
+    @Transactional(readOnly = true)
+    override fun getConsents(userId: Long): List<UserConsentResponse> {
+        val consents = userConsentRepository.findAllByUserId(userId)
+        val conditionMap = consentConditionRepository.findAll()
+            .associateBy { it.consentType }
+        return consents.map { UserConsentResponse.from(it, conditionMap[it.consentType]) }
     }
 
     @Transactional
