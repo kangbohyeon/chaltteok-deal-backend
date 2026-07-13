@@ -46,7 +46,7 @@ class OwnerProfileServiceImpl(
     @Transactional
     override fun withdraw(ownerId: Long, currentPassword: String) {
         val owner = ownerRepository.findById(ownerId)
-            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
+            .orElseThrow { BusinessException(AuthErrorCode.USER_NOT_FOUND) }
         if (owner.withdrawnAt != null) throw BusinessException(OwnerProfileErrorCode.ALREADY_WITHDRAWN)
         if (!passwordEncoder.matches(currentPassword, owner.password)) {
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
