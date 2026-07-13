@@ -19,7 +19,7 @@ class OwnerProfileServiceImpl(
     @Transactional(readOnly = true)
     override fun getProfile(ownerId: Long): OwnerProfileResponse {
         val owner = ownerRepository.findById(ownerId)
-            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
+            .orElseThrow { BusinessException(AuthErrorCode.USER_NOT_FOUND) }
         return OwnerProfileResponse.from(owner)
     }
 
