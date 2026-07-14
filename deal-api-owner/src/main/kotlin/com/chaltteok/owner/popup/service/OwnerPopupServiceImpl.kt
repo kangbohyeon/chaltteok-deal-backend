@@ -20,6 +20,13 @@ class OwnerPopupServiceImpl(
         popupRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
             .map { PopupResponse.from(it) }
 
+    @Transactional(readOnly = true)
+    override fun getPopup(popupUuid: String): PopupResponse {
+        val popup = popupRepository.findByPopupUuid(popupUuid)
+            ?: throw BusinessException(PopupErrorCode.POPUP_NOT_FOUND)
+        return PopupResponse.from(popup)
+    }
+
     @Transactional
     override fun create(request: PopupRequest) {
         val popup = Popup(
