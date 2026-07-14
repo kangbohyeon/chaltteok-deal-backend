@@ -19,6 +19,15 @@ class UserInquiryController(private val userInquiryService: UserInquiryService) 
         return ResponseDTO.success(userInquiryService.getMyInquiries(userId))
     }
 
+    @GetMapping("/{inquiryUuid}")
+    fun getMyInquiry(
+        authentication: Authentication,
+        @PathVariable inquiryUuid: String,
+    ): ResponseDTO<InquiryResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userInquiryService.getMyInquiry(userId, inquiryUuid))
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(

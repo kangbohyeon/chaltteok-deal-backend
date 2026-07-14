@@ -29,6 +29,17 @@ class UserInquiryServiceImpl(
         return inquiries.map { InquiryResponse.from(it, attachmentMap[it.inquiryUuid].orEmpty()) }
     }
 
+    @Transactional(readOnly = true)
+    override fun getMyInquiry(userId: Long, inquiryUuid: String): InquiryResponse {
+        val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
+            ?.takeIf { it.userId == userId }
+            ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
+        val attachments = attachmentRepository.findAllByReferenceUuidInAndAttachmentType(
+            listOf(inquiryUuid), AttachmentType.INQUIRY.name
+        )
+        return InquiryResponse.from(inquiry, attachments)
+    }
+
     @Transactional
     override fun create(userId: Long, request: InquiryRequest): InquiryResponse {
         val inquiry = inquiryRepository.save(
