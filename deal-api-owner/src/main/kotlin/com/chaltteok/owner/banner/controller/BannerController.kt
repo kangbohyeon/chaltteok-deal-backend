@@ -26,6 +26,10 @@ class BannerController(private val ownerBannerService: OwnerBannerService) {
     fun getAll(): ResponseDTO<List<BannerResponse>> =
         ResponseDTO.success(ownerBannerService.getAll())
 
+    @GetMapping("/{bannerUuid}")
+    fun getBanner(@PathVariable bannerUuid: String): ResponseDTO<BannerResponse> =
+        ResponseDTO.success(ownerBannerService.getBanner(bannerUuid))
+
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun create(
         @RequestPart("image", required = false) image: MultipartFile?,
