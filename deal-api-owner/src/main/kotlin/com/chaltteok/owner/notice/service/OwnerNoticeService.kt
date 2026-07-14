@@ -5,6 +5,7 @@ import com.chaltteok.owner.notice.dto.NoticeResponse
 
 interface OwnerNoticeService {
     fun getAll(): List<NoticeResponse>
+    fun getNotice(noticeUuid: String): NoticeResponse
     fun create(request: NoticeRequest)
     fun update(noticeUuid: String, request: NoticeRequest)
     fun delete(noticeUuid: String)
