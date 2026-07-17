@@ -60,7 +60,7 @@ class OwnerCommentServiceImpl(
     @Transactional
     override fun updateReply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse {
         val reply = commentRepository.findByCommentUuid(commentUuid)
-            ?: throw BusinessException(OwnerCommentErrorCode.COMMENT_NOT_FOUND)
+            ?: throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
         if (!reply.isOwnerReply) throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
         reply.content = request.content
         return OwnerCommentResponse.from(reply)
