@@ -43,4 +43,9 @@ class NotificationServiceImpl(
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다: $notificationUuid")
         }
     }
+
+    @Transactional
+    override fun deleteAll() {
+        notificationRepository.deleteAllNotifications()
+    }
 }

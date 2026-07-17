@@ -7,4 +7,5 @@ interface NotificationService {
     fun markAllRead()
     fun markRead(notificationUuid: String)
     fun delete(notificationUuid: String)
+    fun deleteAll()
 }
