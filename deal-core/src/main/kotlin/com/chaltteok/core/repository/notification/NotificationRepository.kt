@@ -14,4 +14,8 @@ interface NotificationRepository : JpaRepository<Notification, Long> {
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.isRead = false")
     fun markAllAsRead(): Int
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Notification n")
+    fun deleteAllNotifications()
 }
