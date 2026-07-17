@@ -8,4 +8,5 @@ interface OwnerCommentService {
     fun getAll(page: Int, size: Int): OwnerCommentPageResponse
     fun delete(commentUuid: String)
     fun reply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse
+    fun updateReply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse
 }

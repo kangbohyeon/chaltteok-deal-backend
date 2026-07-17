@@ -34,4 +34,11 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         @Valid @RequestBody request: OwnerReplyRequest,
     ): ResponseDTO<OwnerCommentResponse> =
         ResponseDTO.success(ownerCommentService.reply(commentUuid, request))
+
+    @PutMapping("/{commentUuid}/reply")
+    fun updateReply(
+        @PathVariable commentUuid: String,
+        @Valid @RequestBody request: OwnerReplyRequest,
+    ): ResponseDTO<OwnerCommentResponse> =
+        ResponseDTO.success(ownerCommentService.updateReply(commentUuid, request))
 }

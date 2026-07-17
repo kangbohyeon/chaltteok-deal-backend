@@ -8,4 +8,5 @@ enum class OwnerCommentErrorCode(
     override val message: String,
 ) : ErrorCode {
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+    REPLY_NOT_FOUND(HttpStatus.NOT_FOUND, "점주 답변을 찾을 수 없습니다."),
 }
