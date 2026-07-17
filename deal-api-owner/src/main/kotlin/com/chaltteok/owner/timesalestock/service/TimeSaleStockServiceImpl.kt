@@ -70,6 +70,15 @@ class TimeSaleStockServiceImpl(
         }
     }
 
+    @Transactional(readOnly = true)
+    override fun findTimeSaleStock(stockUuid: String): OwnerTimeSaleStockListResponse {
+        val stock = timeSaleStockRepository.findByStockUuidWithProduct(stockUuid)
+            ?: throw BusinessException(TimeSaleStockErrorCode.INVALID_ID)
+        val optionUuid = productOptionRepository.findFirstByProduct(stock.product)
+            .map { it.optionUuid }.orElse("")
+        return OwnerTimeSaleStockListResponse.from(stock, optionUuid)
+    }
+
     @Transactional
     override fun deleteTimeSaleStock(stockUuid: String) {
         val stock = timeSaleStockRepository.findByStockUuid(stockUuid)
