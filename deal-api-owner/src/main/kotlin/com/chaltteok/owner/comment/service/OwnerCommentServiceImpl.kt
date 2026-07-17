@@ -67,6 +67,14 @@ class OwnerCommentServiceImpl(
     }
 
     @Transactional
+    override fun deleteReply(commentUuid: String) {
+        val reply = commentRepository.findByCommentUuid(commentUuid)
+            ?: throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
+        if (!reply.isOwnerReply) throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
+        commentRepository.delete(reply)
+    }
+
+    @Transactional
     override fun reply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse {
         val parent = commentRepository.findByCommentUuid(commentUuid)
             ?: throw BusinessException(OwnerCommentErrorCode.COMMENT_NOT_FOUND)

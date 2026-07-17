@@ -9,4 +9,5 @@ interface OwnerCommentService {
     fun delete(commentUuid: String)
     fun reply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse
     fun updateReply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse
+    fun deleteReply(commentUuid: String)
 }

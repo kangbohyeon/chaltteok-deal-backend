@@ -41,4 +41,11 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         @Valid @RequestBody request: OwnerReplyRequest,
     ): ResponseDTO<OwnerCommentResponse> =
         ResponseDTO.success(ownerCommentService.updateReply(commentUuid, request))
+
+    @DeleteMapping("/{commentUuid}/reply")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteReply(@PathVariable commentUuid: String): ResponseDTO<Unit> {
+        ownerCommentService.deleteReply(commentUuid)
+        return ResponseDTO.success(Unit)
+    }
 }
