@@ -59,19 +59,23 @@ class OwnerCommentServiceImpl(
 
     @Transactional
     override fun updateReply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse {
-        val reply = commentRepository.findByCommentUuid(commentUuid)
-            ?: throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
-        if (!reply.isOwnerReply) throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
+        val reply = findOwnerReply(commentUuid)
         reply.content = request.content
         return OwnerCommentResponse.from(reply)
     }
 
     @Transactional
     override fun deleteReply(commentUuid: String) {
+        val reply = findOwnerReply(commentUuid)
+        commentRepository.delete(reply)
+    }
+
+    // 존재하지 않는 UUID와 일반 댓글 UUID 모두 REPLY_NOT_FOUND로 통일 — UUID 존재 여부 노출 방지
+    private fun findOwnerReply(commentUuid: String): Comment {
         val reply = commentRepository.findByCommentUuid(commentUuid)
             ?: throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
         if (!reply.isOwnerReply) throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
-        commentRepository.delete(reply)
+        return reply
     }
 
     @Transactional

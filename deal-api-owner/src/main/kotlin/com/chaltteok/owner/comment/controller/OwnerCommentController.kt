@@ -7,6 +7,7 @@ import com.chaltteok.owner.comment.dto.OwnerReplyRequest
 import com.chaltteok.owner.comment.service.OwnerCommentService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -21,10 +22,9 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         ResponseDTO.success(ownerCommentService.getAll(page, size))
 
     @DeleteMapping("/{commentUuid}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@PathVariable commentUuid: String): ResponseDTO<Unit> {
+    fun delete(@PathVariable commentUuid: String): ResponseEntity<Void> {
         ownerCommentService.delete(commentUuid)
-        return ResponseDTO.success(Unit)
+        return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/{commentUuid}/reply")
@@ -43,9 +43,8 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         ResponseDTO.success(ownerCommentService.updateReply(commentUuid, request))
 
     @DeleteMapping("/{commentUuid}/reply")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteReply(@PathVariable commentUuid: String): ResponseDTO<Unit> {
+    fun deleteReply(@PathVariable commentUuid: String): ResponseEntity<Void> {
         ownerCommentService.deleteReply(commentUuid)
-        return ResponseDTO.success(Unit)
+        return ResponseEntity.noContent().build()
     }
 }
