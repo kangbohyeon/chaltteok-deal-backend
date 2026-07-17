@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 class InquiryRequest(
-    @field:NotBlank val title: String,
-    @field:NotBlank val content: String,
+    @field:NotBlank @field:Size(max = 200) val title: String,
+    @field:NotBlank @field:Size(max = 5000) val content: String,
     @field:Size(max = 3) val attachmentUuids: List<String> = emptyList(),
 )

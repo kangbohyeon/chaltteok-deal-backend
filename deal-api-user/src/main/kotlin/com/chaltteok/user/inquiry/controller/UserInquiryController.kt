@@ -38,6 +38,16 @@ class UserInquiryController(private val userInquiryService: UserInquiryService) 
         return ResponseDTO.success(userInquiryService.create(userId, request))
     }
 
+    @PutMapping("/{inquiryUuid}")
+    fun update(
+        authentication: Authentication,
+        @PathVariable inquiryUuid: String,
+        @Valid @RequestBody request: InquiryRequest,
+    ): ResponseDTO<InquiryResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userInquiryService.update(userId, inquiryUuid, request))
+    }
+
     @DeleteMapping("/{inquiryUuid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(

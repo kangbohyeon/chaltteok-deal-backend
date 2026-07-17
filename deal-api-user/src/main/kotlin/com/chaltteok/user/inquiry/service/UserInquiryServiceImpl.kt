@@ -63,6 +63,33 @@ class UserInquiryServiceImpl(
     }
 
     @Transactional
+    override fun update(userId: Long, inquiryUuid: String, request: InquiryRequest): InquiryResponse {
+        val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
+            ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
+        if (inquiry.userId != userId) throw BusinessException(InquiryErrorCode.INQUIRY_ACCESS_DENIED)
+        if (inquiry.status != "PENDING") throw BusinessException(InquiryErrorCode.INQUIRY_ALREADY_ANSWERED)
+
+        inquiry.title = request.title
+        inquiry.content = request.content
+
+        attachmentRepository.deleteByReferenceUuidAndAttachmentType(inquiryUuid, AttachmentType.INQUIRY.name)
+        if (request.attachmentUuids.isNotEmpty()) {
+            val updated = attachmentRepository.updateReferenceByUuids(
+                request.attachmentUuids,
+                inquiryUuid,
+                AttachmentType.INQUIRY.name
+            )
+            if (updated != request.attachmentUuids.size) {
+                throw BusinessException(FileErrorCode.ATTACHMENT_OWNERSHIP_VIOLATION)
+            }
+        }
+        val attachments = attachmentRepository.findAllByReferenceUuidInAndAttachmentType(
+            listOf(inquiryUuid), AttachmentType.INQUIRY.name
+        )
+        return InquiryResponse.from(inquiry, attachments)
+    }
+
+    @Transactional
     override fun delete(userId: Long, inquiryUuid: String) {
         val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
             ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
