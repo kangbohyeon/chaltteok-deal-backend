@@ -1,5 +1,6 @@
 package com.chaltteok.core.domain
 
+import com.chaltteok.core.domain.enums.InquiryStatus
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.UUID
@@ -16,8 +17,9 @@ class Inquiry(
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     var content: String,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    var status: String = "PENDING",
+    var status: InquiryStatus = InquiryStatus.PENDING,
 
     @Column(name = "answer", columnDefinition = "TEXT")
     var answer: String? = null,

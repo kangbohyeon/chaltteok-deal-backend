@@ -22,7 +22,7 @@ class OwnerInquiryResponse(
             userUuid = userUuid,
             title = inquiry.title,
             content = inquiry.content,
-            status = inquiry.status,
+            status = inquiry.status.name,
             answer = inquiry.answer,
             answeredAt = inquiry.answeredAt,
             createdAt = inquiry.createdAt,

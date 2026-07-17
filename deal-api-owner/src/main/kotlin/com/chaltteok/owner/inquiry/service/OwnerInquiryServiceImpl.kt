@@ -2,6 +2,7 @@ package com.chaltteok.owner.inquiry.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.enums.AttachmentType
+import com.chaltteok.core.domain.enums.InquiryStatus
 import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.core.repository.inquiry.InquiryRepository
 import com.chaltteok.core.repository.user.UserRepository
@@ -63,7 +64,7 @@ class OwnerInquiryServiceImpl(
         val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
             ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
         inquiry.answer = request.answer
-        inquiry.status = "ANSWERED"
+        inquiry.status = InquiryStatus.ANSWERED
         inquiry.answeredAt = LocalDateTime.now()
     }
 }
