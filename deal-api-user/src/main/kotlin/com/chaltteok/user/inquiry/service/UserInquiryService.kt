@@ -7,5 +7,6 @@ interface UserInquiryService {
     fun getMyInquiries(userId: Long): List<InquiryResponse>
     fun getMyInquiry(userId: Long, inquiryUuid: String): InquiryResponse
     fun create(userId: Long, request: InquiryRequest): InquiryResponse
+    fun update(userId: Long, inquiryUuid: String, request: InquiryRequest): InquiryResponse
     fun delete(userId: Long, inquiryUuid: String)
 }

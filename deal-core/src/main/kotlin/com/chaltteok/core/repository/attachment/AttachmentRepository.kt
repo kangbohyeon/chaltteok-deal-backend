@@ -11,7 +11,7 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
 
     fun findAllByReferenceUuidInAndAttachmentType(referenceUuids: List<String>, attachmentType: String): List<Attachment>
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Attachment a SET a.referenceUuid = :referenceUuid, a.attachmentType = :attachmentType WHERE a.attachmentUuid IN :uuids AND a.referenceUuid IS NULL")
     fun updateReferenceByUuids(
         @Param("uuids") uuids: List<String>,
