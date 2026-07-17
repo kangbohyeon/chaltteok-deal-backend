@@ -18,6 +18,9 @@ interface TimeSaleStockRepository : JpaRepository<TimeSaleStock, Long>, TimeSale
 
     fun findByStockUuid(stockUuid: String): TimeSaleStock?
 
+    @Query("SELECT ts FROM TimeSaleStock ts JOIN FETCH ts.product WHERE ts.stockUuid = :stockUuid")
+    fun findByStockUuidWithProduct(stockUuid: String): TimeSaleStock?
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ts FROM TimeSaleStock ts JOIN FETCH ts.product WHERE ts.stockUuid = :uuid")
     fun findByStockUuidWithLock(uuid: String): TimeSaleStock?

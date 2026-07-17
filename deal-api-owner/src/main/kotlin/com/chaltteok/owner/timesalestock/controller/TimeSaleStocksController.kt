@@ -26,6 +26,10 @@ class TimeSaleStocksController(
     fun getTimeSaleStocks(): ResponseEntity<ResponseDTO<List<OwnerTimeSaleStockListResponse>>> =
         ResponseEntity.ok(ResponseDTO.success(timeSaleStockService.findAllTimeSaleStocks()))
 
+    @GetMapping("/time-sale-stocks/{stockUuid}")
+    fun getTimeSaleStock(@PathVariable stockUuid: String): ResponseEntity<ResponseDTO<OwnerTimeSaleStockListResponse>> =
+        ResponseEntity.ok(ResponseDTO.success(timeSaleStockService.findTimeSaleStock(stockUuid)))
+
     @PostMapping("/time-sale-stocks")
     fun createTimeSaleStock(@Valid @RequestBody request: TimeSaleStocksRegisterRequest)
             : ResponseEntity<ResponseDTO<Any>> {
