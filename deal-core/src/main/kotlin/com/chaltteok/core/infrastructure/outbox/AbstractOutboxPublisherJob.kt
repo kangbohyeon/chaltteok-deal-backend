@@ -37,22 +37,23 @@ abstract class AbstractOutboxPublisherJob(
                 log.error { "알 수 없는 eventType — id=${event.id}, type=${event.eventType}" }
                 return@mapNotNull null
             }
-            event to (kafkaTemplate.send(topic, event.aggregateId, event.payload)
-                .orTimeout(5, TimeUnit.SECONDS) as CompletableFuture<*>)
+            event to kafkaTemplate.send(topic, event.aggregateId, event.payload)
+                .orTimeout(5, TimeUnit.SECONDS)
         }
 
-        // Phase 2: 전체 최대 5초 내 완료 대기 (직렬 블로킹 제거 — 최악 100×5s → 5s)
-        CompletableFuture.allOf(*futures.map { it.second }.toTypedArray())
-            .exceptionally { null }
-            .join()
+        // Phase 2: 각 future를 exceptionally { null }로 래핑하여 allOf에 전달
+        // → 하나가 실패해도 나머지 future들이 모두 완료될 때까지 대기 (Race Condition 방지)
+        CompletableFuture.allOf(
+            *futures.map { (_, f) -> f.exceptionally { null } }.toTypedArray()
+        ).join()
 
-        // Phase 3: 결과 수집 및 Bulk UPDATE (DB 라운드트립 최대 3회)
+        // Phase 3: 결과 수집 및 Bulk UPDATE (모든 future 완료 후 진입, DB 라운드트립 최대 3회)
         val processedIds = mutableListOf<Long>()
         val retryIds = mutableListOf<Long>()
         val failedIds = mutableListOf<Long>()
 
         futures.forEach { (event, future) ->
-            if (future.isCompletedExceptionally || !future.isDone) {
+            if (future.isCompletedExceptionally) {
                 log.warn { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=${event.id}, type=${event.eventType}" }
                 if (event.retryCount + 1 >= MAX_RETRIES) failedIds += event.id!!
                 else retryIds += event.id!!
