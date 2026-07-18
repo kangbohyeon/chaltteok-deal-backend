@@ -21,7 +21,6 @@ import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
 import com.chaltteok.core.repository.user.UserRepository
-import com.chaltteok.core.service.orderstats.OrderStatsService
 import com.chaltteok.user.order.dto.OrderHistoryItemResponse
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
@@ -37,7 +36,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeParseException
 
 private val logger = KotlinLogging.logger {}
@@ -52,7 +50,6 @@ class OrderServiceImpl(
     private val paymentRepository: PaymentRepository,
     private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
-    private val orderStatsService: OrderStatsService,
 ) : OrderService {
 
     @Transactional
@@ -113,15 +110,13 @@ class OrderServiceImpl(
             )
         )
 
-        val statDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
-        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
-            override fun afterCommit() {
-                if (stockExhaustedByThisOrder) {
+        if (stockExhaustedByThisOrder) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCommit() {
                     notificationRepository.save(Notification.forSoldOut(productNameForNotify))
                 }
-                orderStatsService.incrementOrderStats(statDate, totalPrice)
-            }
-        })
+            })
+        }
         logger.info { "타임세일 동기 주문 완료 — orderNumber=${order.orderNumber}, userId=$userId, stockUuid=${request.stockUuid}" }
         return OrderResponse.completed(order.orderNumber, totalPrice)
     }
@@ -143,13 +138,6 @@ class OrderServiceImpl(
         val orderId = order.id ?: error("Order ID null")
         paymentRepository.findByOrderId(orderId)?.cancel()
 
-        val cancelDate = LocalDate.now(ZoneId.of("Asia/Seoul"))
-        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
-            // cancelStats는 건수만 집계 (금액은 별도 추적 안 함)
-            override fun afterCommit() {
-                orderStatsService.incrementCancelStats(cancelDate)
-            }
-        })
         outboxEventWriter.write(
             source = OutboxEvent.SOURCE_API_USER,
             aggregateId = order.orderNumber,
