@@ -113,7 +113,11 @@ class OrderServiceImpl(
         if (stockExhaustedByThisOrder) {
             TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
                 override fun afterCommit() {
-                    notificationRepository.save(Notification.forSoldOut(productNameForNotify))
+                    runCatching {
+                        notificationRepository.save(Notification.forSoldOut(productNameForNotify))
+                    }.onFailure { e ->
+                        logger.error(e) { "품절 알림 저장 실패 — productName=$productNameForNotify" }
+                    }
                 }
             })
         }
