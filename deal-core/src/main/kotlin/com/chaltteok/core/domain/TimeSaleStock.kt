@@ -79,5 +79,22 @@ class TimeSaleStock(
         this.startAt = startAt
         this.endAt = endAt
         this.maxPurchaseCount = maxPurchaseCount
+        resetStatusIfNeeded(startAt)
+    }
+
+    private fun resetStatusIfNeeded(newStartAt: LocalDateTime?) {
+        val now = LocalDateTime.now()
+        val shouldReopen = when (status) {
+            TimeSaleStockStatus.SOLD_OUT -> remainStock > 0
+            TimeSaleStockStatus.CLOSED -> endAt != null && endAt!!.isAfter(now)
+            else -> false
+        }
+        if (shouldReopen) {
+            status = if (newStartAt != null && newStartAt.isAfter(now)) {
+                TimeSaleStockStatus.SCHEDULED
+            } else {
+                TimeSaleStockStatus.OPEN
+            }
+        }
     }
 }
