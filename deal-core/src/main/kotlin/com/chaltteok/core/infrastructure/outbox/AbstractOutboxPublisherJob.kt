@@ -52,7 +52,7 @@ abstract class AbstractOutboxPublisherJob(
         val failedIds = mutableListOf<Long>()
 
         futures.forEach { (event, future) ->
-            if (future.isCompletedExceptionally) {
+            if (future.isCompletedExceptionally || !future.isDone) {
                 log.warn { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=${event.id}, type=${event.eventType}" }
                 if (event.retryCount + 1 >= MAX_RETRIES) failedIds += event.id!!
                 else retryIds += event.id!!
