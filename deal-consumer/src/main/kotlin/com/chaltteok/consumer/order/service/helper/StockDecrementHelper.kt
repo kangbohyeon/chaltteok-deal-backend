@@ -1,23 +1,22 @@
 package com.chaltteok.consumer.order.service.helper
 
-import com.chaltteok.consumer.notification.NotificationSaveHelper
 import com.chaltteok.consumer.order.exception.OrderProcessingException
-import com.chaltteok.core.domain.Notification
+import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.enums.TimeSaleStockStatus
+import com.chaltteok.core.event.StockSoldOutEvent
+import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.timesalestock.TimeSaleStockRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.support.TransactionSynchronization
-import org.springframework.transaction.support.TransactionSynchronizationManager
 
 private val log = KotlinLogging.logger {}
 
 @Component
 class StockDecrementHelper(
     private val timeSaleStockRepository: TimeSaleStockRepository,
-    private val notificationSaveHelper: NotificationSaveHelper,
+    private val outboxEventWriter: OutboxEventWriter,
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun tryDecrement(timeSaleStockId: Long, quantity: Int): Boolean {
@@ -33,13 +32,12 @@ class StockDecrementHelper(
         }
         stock.decrease(quantity)
         if (stock.status == TimeSaleStockStatus.SOLD_OUT) {
-            // 재고 차감 커밋 후 별도 트랜잭션에서 알림 저장 — 알림 실패가 재고 차감을 롤백하지 않음
-            val notification = Notification.forSoldOut(stock.product.name)
-            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
-                override fun afterCommit() {
-                    notificationSaveHelper.save(notification)
-                }
-            })
+            outboxEventWriter.write(
+                source = OutboxEvent.SOURCE_CONSUMER_NOTIFICATION,
+                aggregateId = stock.stockUuid,
+                eventType = OutboxEvent.TYPE_STOCK_SOLD_OUT,
+                event = StockSoldOutEvent(productName = stock.product.name),
+            )
         }
         return true
     }
