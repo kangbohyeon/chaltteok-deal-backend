@@ -1,6 +1,5 @@
 package com.chaltteok.consumer.order.service.helper
 
-import com.chaltteok.consumer.notification.SoldOutNotificationPersister
 import com.chaltteok.consumer.order.exception.OrderProcessingException
 import com.chaltteok.core.domain.Product
 import com.chaltteok.core.domain.TimeSaleStock
