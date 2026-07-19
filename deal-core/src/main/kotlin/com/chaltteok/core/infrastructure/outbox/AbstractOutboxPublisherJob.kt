@@ -4,33 +4,26 @@ import com.chaltteok.core.common.KafkaTopics
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.repository.outbox.OutboxEventRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.data.domain.PageRequest
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
 abstract class AbstractOutboxPublisherJob(
-    private val outboxEventRepository: OutboxEventRepository,
+    outboxEventRepository: OutboxEventRepository,
     private val kafkaTemplate: KafkaTemplate<String, String>,
-) {
-    abstract val source: String
+) : AbstractOutboxBatchJob(outboxEventRepository) {
 
     @Scheduled(fixedDelayString = "\${outbox.publisher.delay-ms:3000}")
     @Transactional
     open fun publish() {
-        val events = outboxEventRepository.findPendingBatch(
-            source = source,
-            maxRetry = MAX_RETRIES,
-            pageable = PageRequest.of(0, BATCH_SIZE),
-        )
-        if (events.isEmpty()) return
+        executeBatch()
+    }
 
-        // Phase 1: 전체 전송 동시 시작, 건당 5초 타임아웃 부여
+    override fun processBatch(events: List<OutboxEvent>): BatchResult {
         val futures = events.mapNotNull { event ->
             val topic = KafkaTopics.OUTBOX_TOPIC_MAP[event.eventType]
             if (topic == null) {
@@ -41,13 +34,11 @@ abstract class AbstractOutboxPublisherJob(
                 .orTimeout(5, TimeUnit.SECONDS)
         }
 
-        // Phase 2: 각 future를 exceptionally { null }로 래핑하여 allOf에 전달
-        // → 하나가 실패해도 나머지 future들이 모두 완료될 때까지 대기 (Race Condition 방지)
+        // 하나가 실패해도 나머지 future들이 모두 완료될 때까지 대기 (Race Condition 방지)
         CompletableFuture.allOf(
             *futures.map { (_, f) -> f.exceptionally { null } }.toTypedArray()
         ).join()
 
-        // Phase 3: 결과 수집 및 Bulk UPDATE (모든 future 완료 후 진입, DB 라운드트립 최대 3회)
         val processedIds = mutableListOf<Long>()
         val retryIds = mutableListOf<Long>()
         val failedIds = mutableListOf<Long>()
@@ -55,23 +46,12 @@ abstract class AbstractOutboxPublisherJob(
         futures.forEach { (event, future) ->
             if (future.isCompletedExceptionally) {
                 log.warn { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=${event.id}, type=${event.eventType}" }
-                if (event.retryCount + 1 >= MAX_RETRIES) failedIds += event.id!!
-                else retryIds += event.id!!
+                if (event.retryCount + 1 >= MAX_RETRIES) failedIds += event.id!! else retryIds += event.id!!
             } else {
                 processedIds += event.id!!
             }
         }
 
-        val now = LocalDateTime.now()
-        if (processedIds.isNotEmpty()) outboxEventRepository.markProcessed(processedIds, now)
-        if (retryIds.isNotEmpty()) outboxEventRepository.incrementRetry(retryIds)
-        if (failedIds.isNotEmpty()) outboxEventRepository.markFailed(failedIds)
-
-        log.debug { "Outbox 배치 처리 완료 — 총 ${events.size}건 (성공=${processedIds.size}, 재시도=${retryIds.size}, 실패=${failedIds.size})" }
-    }
-
-    companion object {
-        const val MAX_RETRIES = 3
-        const val BATCH_SIZE = 100
+        return BatchResult(processedIds, retryIds, failedIds)
     }
 }
