@@ -37,7 +37,7 @@ class StockSoldOutNotificationJob(
             val id = requireNotNull(event.id) { "OutboxEvent.id must not be null — source=${event.source}" }
             try {
                 val soldOutEvent = objectMapper.readValue(event.payload, StockSoldOutEvent::class.java)
-                persister.save(soldOutEvent.productName)
+                persister.save(soldOutEvent.productName, id)
                 processedIds += id
             } catch (e: Exception) {
                 log.warn(e) { "SOLD_OUT 알림 저장 실패 (retryCount=${event.retryCount + 1}) — id=$id" }
