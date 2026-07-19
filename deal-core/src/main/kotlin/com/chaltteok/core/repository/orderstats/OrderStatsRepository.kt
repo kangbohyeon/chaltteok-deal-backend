@@ -17,7 +17,7 @@ interface OrderStatsRepository : JpaRepository<OrderStats, Long> {
 
     fun findAllByStatDateBetween(from: LocalDate, to: LocalDate): List<OrderStats>
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
         value = """
             INSERT INTO tb_order_stats (stat_uuid, stat_date, order_count, total_revenue, cancelled_count, created_at, updated_at)
@@ -35,7 +35,7 @@ interface OrderStatsRepository : JpaRepository<OrderStats, Long> {
         @Param("revenue") revenue: Long,
     )
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
         value = """
             INSERT INTO tb_order_stats (stat_uuid, stat_date, order_count, total_revenue, cancelled_count, created_at, updated_at)

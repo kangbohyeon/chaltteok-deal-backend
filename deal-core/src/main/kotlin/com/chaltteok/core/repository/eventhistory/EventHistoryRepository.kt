@@ -12,7 +12,7 @@ interface EventHistoryRepository : JpaRepository<EventHistory, Long>, EventHisto
     fun findAllByUser_Id(userId: Long): List<EventHistory>
     fun countByUser_IdAndTimeSaleStock_Id(userId: Long, timeSaleStockId: Long?): Long
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM EventHistory eh WHERE eh.timeSaleStock = :timeSaleStock")
     fun deleteAllByTimeSaleStock(@Param("timeSaleStock") timeSaleStock: TimeSaleStock)
 
