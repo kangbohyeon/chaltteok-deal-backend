@@ -34,13 +34,18 @@ class OwnerProfileServiceImpl(
         val owner = ownerRepository.findById(ownerId)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
-        if (!request.currentPassword.isNullOrBlank() &&
+        if (request.currentPassword.isNullOrBlank() ||
             !passwordEncoder.matches(request.currentPassword, owner.password)) {
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
         }
 
         owner.password = passwordEncoder.encode(request.newPassword)
         owner.passwordChangedAt = LocalDateTime.now()
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                jwtTokenProvider.deleteRefreshToken(ownerId, "ROLE_OWNER")
+            }
+        })
     }
 
     @Transactional
