@@ -11,7 +11,7 @@ class SoldOutNotificationPersister(
     private val notificationRepository: NotificationRepository,
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun save(productName: String) {
-        notificationRepository.save(Notification.forSoldOut(productName))
+    fun save(productName: String, sourceEventId: Long) {
+        notificationRepository.save(Notification.forSoldOut(productName, sourceEventId))
     }
 }

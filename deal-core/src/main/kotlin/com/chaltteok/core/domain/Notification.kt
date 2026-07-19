@@ -5,7 +5,13 @@ import jakarta.persistence.*
 import java.util.UUID
 
 @Entity
-@Table(name = "tb_notifications", uniqueConstraints = [UniqueConstraint(name = "uk_notification_uuid", columnNames = ["notification_uuid"])])
+@Table(
+    name = "tb_notifications",
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_notification_uuid", columnNames = ["notification_uuid"]),
+        UniqueConstraint(name = "uk_notification_source_event", columnNames = ["source_event_id"]),
+    ],
+)
 class Notification(
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 30)
@@ -22,6 +28,10 @@ class Notification(
 
     @Column(name = "order_number", nullable = true, length = 50)
     val orderNumber: String? = null,
+
+    // Outbox 재시도 시 중복 알림 방지 — OutboxEvent PK를 기록하여 멱등성 보장 (nullable: 비-Outbox 경로 알림과 공존)
+    @Column(name = "source_event_id", nullable = true)
+    val sourceEventId: Long? = null,
 ) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,10 +49,11 @@ class Notification(
             orderNumber = orderNumber,
         )
 
-        fun forSoldOut(productName: String) = Notification(
+        fun forSoldOut(productName: String, sourceEventId: Long? = null) = Notification(
             type = NotificationType.SOLD_OUT,
             title = "재고가 소진되었습니다",
             message = productName,
+            sourceEventId = sourceEventId,
         )
     }
 }
