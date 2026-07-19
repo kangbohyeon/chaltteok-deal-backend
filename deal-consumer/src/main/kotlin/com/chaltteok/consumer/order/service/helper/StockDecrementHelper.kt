@@ -22,9 +22,8 @@ class StockDecrementHelper(
             if (stock.remainStock == 0) stock.status = TimeSaleStockStatus.SOLD_OUT
             return false
         }
-        stock.remainStock -= quantity
+        stock.decrease(quantity)
         if (stock.remainStock == 0) {
-            stock.status = TimeSaleStockStatus.SOLD_OUT
             notificationRepository.save(Notification.forSoldOut(stock.product.name))
         }
         return true
