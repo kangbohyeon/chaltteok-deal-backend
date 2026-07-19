@@ -54,6 +54,14 @@ class OwnerCommentServiceImpl(
     override fun delete(commentUuid: String) {
         val comment = commentRepository.findByCommentUuid(commentUuid)
             ?: throw BusinessException(OwnerCommentErrorCode.COMMENT_NOT_FOUND)
+        if (comment.parentId == null) {
+            val commentId = requireNotNull(comment.id) { "comment id null" }
+            val replies = commentRepository.findRepliesByParentIds(listOf(commentId))
+            if (replies.isNotEmpty()) {
+                attachmentRepository.deleteByReferenceUuidsInAndAttachmentType(replies.map { it.commentUuid }, AttachmentType.COMMENT.name)
+                commentRepository.deleteAll(replies)
+            }
+        }
         attachmentRepository.deleteByReferenceUuidAndAttachmentType(commentUuid, AttachmentType.COMMENT.name)
         commentRepository.delete(comment)
     }
