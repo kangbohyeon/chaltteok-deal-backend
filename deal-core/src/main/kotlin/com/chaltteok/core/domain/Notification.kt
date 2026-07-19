@@ -30,7 +30,7 @@ class Notification(
     val orderNumber: String? = null,
 
     // Outbox 재시도 시 중복 알림 방지 — OutboxEvent PK를 기록하여 멱등성 보장 (nullable: 비-Outbox 경로 알림과 공존)
-    @Column(name = "source_event_id", nullable = true, unique = true)
+    @Column(name = "source_event_id", nullable = true)
     val sourceEventId: Long? = null,
 ) : BaseEntity() {
     @Id
