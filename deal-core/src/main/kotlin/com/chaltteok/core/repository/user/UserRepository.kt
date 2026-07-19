@@ -14,7 +14,7 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
     fun findByNicknameAndPhone(nickname: String, phone: String): Optional<User>
     fun findByEmailAndNickname(email: String, nickname: String): Optional<User>
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
         """
         UPDATE User u SET
@@ -29,7 +29,7 @@ interface UserRepository : JpaRepository<User, Long>, UserRepositoryCustom {
         @Param("now") now: LocalDateTime,
     ): Int
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE User u SET u.loginFailedCount = 0 WHERE u.id = :userId AND u.loginFailedCount <> 0")
     fun resetFailedCount(@Param("userId") userId: Long): Int
 }

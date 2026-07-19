@@ -77,7 +77,7 @@ interface CommentRepository : JpaRepository<Comment, Long> {
     """)
     fun avgRatingByProductIds(@Param("productIds") productIds: List<Long>): List<AverageRatingProjection>
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("DELETE FROM Comment c WHERE c.product.id = :productId")
     fun deleteAllByProductId(@Param("productId") productId: Long)

@@ -11,11 +11,11 @@ interface NotificationRepository : JpaRepository<Notification, Long> {
     fun countByIsReadFalse(): Long
     fun deleteByNotificationUuid(notificationUuid: String): Int
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.isRead = false")
     fun markAllAsRead(): Int
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Notification n")
     fun deleteAllNotifications()
 }

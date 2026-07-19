@@ -21,15 +21,15 @@ interface OutboxEventRepository : JpaRepository<OutboxEvent, Long> {
         pageable: Pageable,
     ): List<OutboxEvent>
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE OutboxEvent e SET e.status = 'PROCESSED', e.processedAt = :now WHERE e.id IN :ids")
     fun markProcessed(@Param("ids") ids: List<Long>, @Param("now") now: LocalDateTime): Int
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE OutboxEvent e SET e.retryCount = e.retryCount + 1 WHERE e.id IN :ids")
     fun incrementRetry(@Param("ids") ids: List<Long>): Int
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE OutboxEvent e SET e.status = 'FAILED', e.retryCount = e.retryCount + 1 WHERE e.id IN :ids")
     fun markFailed(@Param("ids") ids: List<Long>): Int
 }
