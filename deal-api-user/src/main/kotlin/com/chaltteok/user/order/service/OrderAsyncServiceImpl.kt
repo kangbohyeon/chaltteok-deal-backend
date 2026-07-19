@@ -37,8 +37,8 @@ class OrderAsyncServiceImpl(
         if (maxPurchaseCount != null) {
             val participated = eventHistoryRepository.countByUser_IdAndTimeSaleStock_Id(userId, timeSaleStock.id)
             if (participated + request.quantity > maxPurchaseCount) {
-                if (participated == 0L) throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
-                throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
+                if (participated >= maxPurchaseCount) throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
+                throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
             }
         }
 

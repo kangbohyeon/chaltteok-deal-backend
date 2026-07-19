@@ -32,8 +32,8 @@ class OrderProcessServiceImpl(
 
         val user = userRepository.findById(command.userId)
             .orElseThrow { OrderProcessingException("User not found: ${command.userId}") }
-        val timeSaleStock = timeSaleStockRepository.findById(command.timeSaleStockId)
-            .orElseThrow { OrderProcessingException("TimeSaleStock not found: ${command.timeSaleStockId}") }
+        val timeSaleStock = timeSaleStockRepository.findByIdWithProduct(command.timeSaleStockId)
+            ?: throw OrderProcessingException("TimeSaleStock not found: ${command.timeSaleStockId}")
 
         if (duplicateChecker.isExceedingPurchaseLimit(user, timeSaleStock, command.quantity)) {
             log.warn { "구매 한도 초과 요청 무시 — userId=${command.userId}, timeSaleStockId=${command.timeSaleStockId}, quantity=${command.quantity}" }

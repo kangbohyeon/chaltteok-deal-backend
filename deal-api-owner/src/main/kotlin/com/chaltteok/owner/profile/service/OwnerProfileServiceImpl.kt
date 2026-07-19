@@ -34,7 +34,7 @@ class OwnerProfileServiceImpl(
         val owner = ownerRepository.findById(ownerId)
             .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
-        if (!request.currentPassword.isNullOrBlank() &&
+        if (request.currentPassword.isNullOrBlank() ||
             !passwordEncoder.matches(request.currentPassword, owner.password)) {
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
         }
