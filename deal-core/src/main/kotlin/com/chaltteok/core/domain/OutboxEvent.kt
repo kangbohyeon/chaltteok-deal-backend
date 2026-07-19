@@ -36,8 +36,10 @@ class OutboxEvent(
         const val SOURCE_API_USER = "API_USER"
         const val SOURCE_API_OWNER = "API_OWNER"
         const val SOURCE_CONSUMER = "CONSUMER"
+        const val SOURCE_CONSUMER_NOTIFICATION = "CONSUMER_NOTIFICATION"
 
         const val TYPE_ORDER_COMPLETED = "ORDER_COMPLETED"
         const val TYPE_ORDER_CANCELLED = "ORDER_CANCELLED"
+        const val TYPE_STOCK_SOLD_OUT = "STOCK_SOLD_OUT"
     }
 }
