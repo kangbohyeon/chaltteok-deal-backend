@@ -41,6 +41,11 @@ class OwnerProfileServiceImpl(
 
         owner.password = passwordEncoder.encode(request.newPassword)
         owner.passwordChangedAt = LocalDateTime.now()
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                jwtTokenProvider.deleteRefreshToken(ownerId, "ROLE_OWNER")
+            }
+        })
     }
 
     @Transactional
