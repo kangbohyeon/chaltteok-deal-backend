@@ -25,4 +25,11 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
         @Param("referenceUuid") referenceUuid: String,
         @Param("attachmentType") attachmentType: String,
     )
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Attachment a WHERE a.referenceUuid IN :referenceUuids AND a.attachmentType = :attachmentType")
+    fun deleteByReferenceUuidsInAndAttachmentType(
+        @Param("referenceUuids") referenceUuids: List<String>,
+        @Param("attachmentType") attachmentType: String,
+    )
 }
