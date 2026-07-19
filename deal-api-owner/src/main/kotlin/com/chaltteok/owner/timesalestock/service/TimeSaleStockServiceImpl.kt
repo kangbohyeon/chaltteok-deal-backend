@@ -23,6 +23,7 @@ class TimeSaleStockServiceImpl(
     private val productOptionRepository: ProductOptionRepository,
     private val eventHistoryRepository: EventHistoryRepository,
 ) : TimeSaleStockService {
+    @Transactional
     override fun registerTimeSaleStock(request: TimeSaleStocksRegisterRequest) {
         val productOption =
             productOptionRepository.findProductOptionByOptionUuid(request.optionId)

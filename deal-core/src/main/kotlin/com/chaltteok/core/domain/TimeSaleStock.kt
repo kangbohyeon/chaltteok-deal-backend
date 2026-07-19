@@ -79,5 +79,23 @@ class TimeSaleStock(
         this.startAt = startAt
         this.endAt = endAt
         this.maxPurchaseCount = maxPurchaseCount
+        resetStatusIfNeeded(startAt, LocalDateTime.now())
+    }
+
+    // SOLD_OUT(재고 복구 시) 또는 CLOSED(종료 시각이 아직 미래인 경우) 상태를 재오픈한다.
+    // now를 파라미터로 받아 배치 처리 시 기준 시각 일관성을 보장하고 테스트 가능성을 확보한다.
+    internal fun resetStatusIfNeeded(newStartAt: LocalDateTime?, now: LocalDateTime) {
+        val shouldReopen = when (status) {
+            TimeSaleStockStatus.SOLD_OUT -> remainStock > 0
+            TimeSaleStockStatus.CLOSED -> endAt?.isAfter(now) == true
+            else -> false
+        }
+        if (shouldReopen) {
+            status = if (newStartAt != null && newStartAt.isAfter(now)) {
+                TimeSaleStockStatus.SCHEDULED
+            } else {
+                TimeSaleStockStatus.OPEN
+            }
+        }
     }
 }
