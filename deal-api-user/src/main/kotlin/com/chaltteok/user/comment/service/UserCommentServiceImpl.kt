@@ -119,6 +119,13 @@ class UserCommentServiceImpl(
         val comment = commentRepository.findByCommentUuid(commentUuid)
             ?: throw BusinessException(CommentErrorCode.COMMENT_NOT_FOUND)
         if (comment.userId != userId) throw BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED)
+        if (comment.parentId == null) {
+            val replies = commentRepository.findRepliesByParentIds(listOf(comment.id ?: error("comment id null")))
+            if (replies.isNotEmpty()) {
+                replies.forEach { attachmentRepository.deleteByReferenceUuidAndAttachmentType(it.commentUuid, AttachmentType.COMMENT.name) }
+                commentRepository.deleteAll(replies)
+            }
+        }
         attachmentRepository.deleteByReferenceUuidAndAttachmentType(commentUuid, AttachmentType.COMMENT.name)
         commentRepository.delete(comment)
     }
