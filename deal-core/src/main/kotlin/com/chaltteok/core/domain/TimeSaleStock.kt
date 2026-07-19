@@ -11,6 +11,7 @@ import java.util.*
     name = "tb_time_sale_stocks",
     indexes = [
         Index(name = "idx_date_type", columnList = "sale_date, stock_type"),
+        Index(name = "idx_end_at_status", columnList = "end_at, status"),
     ],
     uniqueConstraints = [
         UniqueConstraint(name = "uk_stock_uuid", columnNames = ["stock_uuid"]),
