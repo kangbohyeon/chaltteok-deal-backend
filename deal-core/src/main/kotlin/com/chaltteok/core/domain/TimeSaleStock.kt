@@ -66,8 +66,13 @@ class TimeSaleStock(
     val stockUuid: String = UUID.randomUUID().toString()
 
     fun decrease(quantity: Int = 1) {
+        check(status == TimeSaleStockStatus.OPEN) { "OPEN 상태가 아닌 재고는 차감 불가: $status" }
         check(remainStock >= quantity) { "재고가 부족합니다" }
         remainStock -= quantity
+        if (remainStock == 0) status = TimeSaleStockStatus.SOLD_OUT
+    }
+
+    fun markSoldOutIfDepleted() {
         if (remainStock == 0) status = TimeSaleStockStatus.SOLD_OUT
     }
 

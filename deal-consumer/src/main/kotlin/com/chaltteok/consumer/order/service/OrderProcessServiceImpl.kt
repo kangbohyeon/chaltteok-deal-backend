@@ -67,6 +67,9 @@ class OrderProcessServiceImpl(
                         return@withLock
                     }
                     Thread.sleep(RETRY_DELAY_MS)
+                } catch (e: IllegalStateException) {
+                    log.error(e) { "도메인 불변식 위반으로 주문 처리 포기 — timeSaleStockId=${command.timeSaleStockId}" }
+                    return@withLock
                 }
             }
             // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용

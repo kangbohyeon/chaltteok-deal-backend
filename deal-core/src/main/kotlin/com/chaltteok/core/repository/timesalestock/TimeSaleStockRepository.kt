@@ -40,7 +40,8 @@ interface TimeSaleStockRepository : JpaRepository<TimeSaleStock, Long>, TimeSale
     """)
     fun findVisibleTimeSaleStocks(now: LocalDateTime): List<TimeSaleStock>
 
-    @Query("UPDATE TimeSaleStock ts SET ts.status = com.chaltteok.core.domain.enums.TimeSaleStockStatus.CLOSED WHERE ts.endAt < :now AND ts.status IN (com.chaltteok.core.domain.enums.TimeSaleStockStatus.OPEN, com.chaltteok.core.domain.enums.TimeSaleStockStatus.SOLD_OUT)")
+    // SCHEDULED 포함: startAt > endAt인 비정상 등록 재고가 영구 잔존하는 데이터 오염 방지 (이슈 #237)
+    @Query("UPDATE TimeSaleStock ts SET ts.status = com.chaltteok.core.domain.enums.TimeSaleStockStatus.CLOSED WHERE ts.endAt < :now AND ts.status IN (com.chaltteok.core.domain.enums.TimeSaleStockStatus.OPEN, com.chaltteok.core.domain.enums.TimeSaleStockStatus.SOLD_OUT, com.chaltteok.core.domain.enums.TimeSaleStockStatus.SCHEDULED)")
     @Modifying
     fun closeExpiredStocks(now: LocalDateTime): Int
 
