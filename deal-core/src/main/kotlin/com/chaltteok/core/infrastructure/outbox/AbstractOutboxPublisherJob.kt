@@ -4,74 +4,61 @@ import com.chaltteok.core.common.KafkaTopics
 import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.repository.outbox.OutboxEventRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.data.domain.PageRequest
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
 abstract class AbstractOutboxPublisherJob(
-    private val outboxEventRepository: OutboxEventRepository,
+    outboxEventRepository: OutboxEventRepository,
     private val kafkaTemplate: KafkaTemplate<String, String>,
-) {
-    abstract val source: String
+) : AbstractOutboxBatchJob(outboxEventRepository) {
 
+    // Spring AOP(@Transactional) 프록싱을 위해 open 필수 — 제거 시 트랜잭션 무효화
     @Scheduled(fixedDelayString = "\${outbox.publisher.delay-ms:3000}")
     @Transactional
     open fun publish() {
-        val events = outboxEventRepository.findPendingBatch(
-            source = source,
-            maxRetry = MAX_RETRIES,
-            pageable = PageRequest.of(0, BATCH_SIZE),
-        )
-        if (events.isEmpty()) return
+        executeBatch()
+    }
 
-        // Phase 1: 전체 전송 동시 시작, 건당 5초 타임아웃 부여
-        val futures = events.mapNotNull { event ->
-            val topic = KafkaTopics.OUTBOX_TOPIC_MAP[event.eventType]
-            if (topic == null) {
-                log.error { "알 수 없는 eventType — id=${event.id}, type=${event.eventType}" }
-                return@mapNotNull null
-            }
-            event to kafkaTemplate.send(topic, event.aggregateId, event.payload)
-                .orTimeout(5, TimeUnit.SECONDS)
-        }
-
-        // Phase 2: 각 future를 exceptionally { null }로 래핑하여 allOf에 전달
-        // → 하나가 실패해도 나머지 future들이 모두 완료될 때까지 대기 (Race Condition 방지)
-        CompletableFuture.allOf(
-            *futures.map { (_, f) -> f.exceptionally { null } }.toTypedArray()
-        ).join()
-
-        // Phase 3: 결과 수집 및 Bulk UPDATE (모든 future 완료 후 진입, DB 라운드트립 최대 3회)
+    override fun processBatch(events: List<OutboxEvent>): BatchResult {
+        val kafkaFutures = mutableListOf<Pair<OutboxEvent, CompletableFuture<*>>>()
         val processedIds = mutableListOf<Long>()
         val retryIds = mutableListOf<Long>()
         val failedIds = mutableListOf<Long>()
 
-        futures.forEach { (event, future) ->
-            if (future.isCompletedExceptionally) {
-                log.warn { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=${event.id}, type=${event.eventType}" }
-                if (event.retryCount + 1 >= MAX_RETRIES) failedIds += event.id!!
-                else retryIds += event.id!!
+        events.forEach { event ->
+            val id = requireNotNull(event.id) { "OutboxEvent.id must not be null — type=${event.eventType}" }
+            val topic = KafkaTopics.OUTBOX_TOPIC_MAP[event.eventType]
+            if (topic == null) {
+                log.error { "알 수 없는 eventType → FAILED 처리 — id=$id, type=${event.eventType}" }
+                failedIds += id
             } else {
-                processedIds += event.id!!
+                kafkaFutures += event to kafkaTemplate.send(topic, event.aggregateId, event.payload)
+                    .orTimeout(5, TimeUnit.SECONDS)
             }
         }
 
-        val now = LocalDateTime.now()
-        if (processedIds.isNotEmpty()) outboxEventRepository.markProcessed(processedIds, now)
-        if (retryIds.isNotEmpty()) outboxEventRepository.incrementRetry(retryIds)
-        if (failedIds.isNotEmpty()) outboxEventRepository.markFailed(failedIds)
+        if (kafkaFutures.isEmpty()) return BatchResult(processedIds, retryIds, failedIds)
 
-        log.debug { "Outbox 배치 처리 완료 — 총 ${events.size}건 (성공=${processedIds.size}, 재시도=${retryIds.size}, 실패=${failedIds.size})" }
-    }
+        // 하나가 실패해도 나머지 future들이 모두 완료될 때까지 대기 (Race Condition 방지)
+        CompletableFuture.allOf(
+            *kafkaFutures.map { (_, f) -> f.exceptionally { null } }.toTypedArray()
+        ).join()
 
-    companion object {
-        const val MAX_RETRIES = 3
-        const val BATCH_SIZE = 100
+        kafkaFutures.forEach { (event, future) ->
+            val id = requireNotNull(event.id) { "OutboxEvent.id must not be null — type=${event.eventType}" }
+            if (future.isCompletedExceptionally) {
+                log.warn { "Outbox 발행 실패 (retryCount=${event.retryCount + 1}) — id=$id, type=${event.eventType}" }
+                if (isMaxRetryReached(event)) failedIds += id else retryIds += id
+            } else {
+                processedIds += id
+            }
+        }
+
+        return BatchResult(processedIds, retryIds, failedIds)
     }
 }
