@@ -6,8 +6,8 @@ import com.chaltteok.owner.comment.dto.OwnerReplyRequest
 
 interface OwnerCommentService {
     fun getAll(page: Int, size: Int): OwnerCommentPageResponse
-    fun delete(commentUuid: String)
-    fun reply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse
-    fun updateReply(commentUuid: String, request: OwnerReplyRequest): OwnerCommentResponse
-    fun deleteReply(commentUuid: String)
+    fun delete(commentUuid: String, ownerId: Long)
+    fun reply(commentUuid: String, request: OwnerReplyRequest, ownerId: Long): OwnerCommentResponse
+    fun updateReply(commentUuid: String, request: OwnerReplyRequest, ownerId: Long): OwnerCommentResponse
+    fun deleteReply(commentUuid: String, ownerId: Long)
 }

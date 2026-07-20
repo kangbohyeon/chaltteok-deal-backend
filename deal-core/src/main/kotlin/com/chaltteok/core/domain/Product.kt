@@ -41,6 +41,9 @@ class Product(
     @Column(name = "display_order", nullable = false)
     var displayOrder: Int = 0,
 
+    @Column(name = "owner_id", nullable = true)
+    val ownerId: Long? = null,
+
 ) : BaseEntity() {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

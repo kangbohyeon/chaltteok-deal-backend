@@ -46,9 +46,9 @@ class ProductServiceImpl(
         CacheEvict(value = [CacheNames.PRODUCT_RECOMMENDED], allEntries = true),
     ])
     @Transactional
-    override fun registerProduct(request: ProductRegisterRequest, image: MultipartFile?) {
+    override fun registerProduct(request: ProductRegisterRequest, image: MultipartFile?, ownerId: Long) {
         val imageUrl = image?.takeIf { !it.isEmpty }?.let { fileUploader.uploadFile(it) }
-        val product = request.toProduct(imageUrl)
+        val product = request.toProduct(imageUrl, ownerId)
         productRepository.save(product)
         productOptionRepository.save(request.toProductOption(product))
         logger.info { "product registered: ${request.name}" }
