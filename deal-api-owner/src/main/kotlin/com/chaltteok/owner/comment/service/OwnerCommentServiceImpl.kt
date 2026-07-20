@@ -53,7 +53,7 @@ class OwnerCommentServiceImpl(
 
     @Transactional
     override fun delete(commentUuid: String, ownerId: Long) {
-        val comment = commentRepository.findByCommentUuid(commentUuid)
+        val comment = commentRepository.findByCommentUuidWithProduct(commentUuid)
             ?: throw BusinessException(OwnerCommentErrorCode.COMMENT_NOT_FOUND)
         verifyProductOwnership(comment.product, ownerId)
         if (comment.parentId == null) {
@@ -85,7 +85,7 @@ class OwnerCommentServiceImpl(
 
     @Transactional
     override fun reply(commentUuid: String, request: OwnerReplyRequest, ownerId: Long): OwnerCommentResponse {
-        val parent = commentRepository.findByCommentUuid(commentUuid)
+        val parent = commentRepository.findByCommentUuidWithProduct(commentUuid)
             ?: throw BusinessException(OwnerCommentErrorCode.COMMENT_NOT_FOUND)
         verifyProductOwnership(parent.product, ownerId)
         val reply = commentRepository.save(
@@ -102,16 +102,14 @@ class OwnerCommentServiceImpl(
 
     // 존재하지 않는 UUID와 일반 댓글 UUID 모두 REPLY_NOT_FOUND로 통일 — UUID 존재 여부 노출 방지
     private fun findOwnerReply(commentUuid: String): Comment {
-        val reply = commentRepository.findByCommentUuid(commentUuid)
+        val reply = commentRepository.findByCommentUuidWithProduct(commentUuid)
             ?: throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
         if (!reply.isOwnerReply) throw BusinessException(OwnerCommentErrorCode.REPLY_NOT_FOUND)
         return reply
     }
 
-    // product.ownerId가 null인 경우 기존 데이터(마이그레이션 이전)로 간주하여 접근 허용
     private fun verifyProductOwnership(product: Product, ownerId: Long) {
-        val productOwnerId = product.ownerId ?: return
-        if (productOwnerId != ownerId) {
+        if (product.ownerId != ownerId) {
             throw BusinessException(OwnerCommentErrorCode.COMMENT_ACCESS_DENIED)
         }
     }

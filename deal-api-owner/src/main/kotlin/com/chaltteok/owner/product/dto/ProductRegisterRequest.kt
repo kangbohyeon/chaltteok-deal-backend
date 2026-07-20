@@ -26,7 +26,7 @@ class ProductRegisterRequest(
     @field:Max(value = ProductConstants.DISPLAY_ORDER_MAX, message = "display order must be ${ProductConstants.DISPLAY_ORDER_MAX} or less")
     val displayOrder: Int = 0,
 ) {
-    fun toProduct(imageUrl: String?, ownerId: Long? = null): Product {
+    fun toProduct(imageUrl: String?, ownerId: Long): Product {
         val soldOut = isSoldOut || stockQuantity == 0
         return Product(
             name = name,

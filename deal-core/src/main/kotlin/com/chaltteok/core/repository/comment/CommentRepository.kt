@@ -22,6 +22,9 @@ interface AverageRatingProjection {
 interface CommentRepository : JpaRepository<Comment, Long> {
     fun findByCommentUuid(uuid: String): Comment?
 
+    @Query("SELECT c FROM Comment c JOIN FETCH c.product WHERE c.commentUuid = :uuid")
+    fun findByCommentUuidWithProduct(@Param("uuid") uuid: String): Comment?
+
     @Query("""
         SELECT c FROM Comment c
         WHERE c.product.productUuid = :productUuid

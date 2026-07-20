@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
+private val Authentication.ownerId: Long
+    get() = principal as? Long ?: throw IllegalStateException("invalid principal type")
+
 @RestController
 @RequestMapping("/api/v1/owner/comments")
 class OwnerCommentController(private val ownerCommentService: OwnerCommentService) {
@@ -27,7 +30,7 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         authentication: Authentication,
         @PathVariable commentUuid: String,
     ): ResponseEntity<Void> {
-        ownerCommentService.delete(commentUuid, authentication.principal as Long)
+        ownerCommentService.delete(commentUuid, authentication.ownerId)
         return ResponseEntity.noContent().build()
     }
 
@@ -38,7 +41,7 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         @PathVariable commentUuid: String,
         @Valid @RequestBody request: OwnerReplyRequest,
     ): ResponseDTO<OwnerCommentResponse> =
-        ResponseDTO.success(ownerCommentService.reply(commentUuid, request, authentication.principal as Long))
+        ResponseDTO.success(ownerCommentService.reply(commentUuid, request, authentication.ownerId))
 
     @PutMapping("/{commentUuid}/reply")
     fun updateReply(
@@ -46,14 +49,14 @@ class OwnerCommentController(private val ownerCommentService: OwnerCommentServic
         @PathVariable commentUuid: String,
         @Valid @RequestBody request: OwnerReplyRequest,
     ): ResponseDTO<OwnerCommentResponse> =
-        ResponseDTO.success(ownerCommentService.updateReply(commentUuid, request, authentication.principal as Long))
+        ResponseDTO.success(ownerCommentService.updateReply(commentUuid, request, authentication.ownerId))
 
     @DeleteMapping("/{commentUuid}/reply")
     fun deleteReply(
         authentication: Authentication,
         @PathVariable commentUuid: String,
     ): ResponseEntity<Void> {
-        ownerCommentService.deleteReply(commentUuid, authentication.principal as Long)
+        ownerCommentService.deleteReply(commentUuid, authentication.ownerId)
         return ResponseEntity.noContent().build()
     }
 }
