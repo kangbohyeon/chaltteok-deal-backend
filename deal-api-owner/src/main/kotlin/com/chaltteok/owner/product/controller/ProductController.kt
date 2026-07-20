@@ -10,6 +10,7 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
@@ -27,10 +28,11 @@ class ProductController(private val productService: ProductService) {
 
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun createProduct(
+        authentication: Authentication,
         @RequestPart("image", required = false) image: MultipartFile?,
         @Valid @RequestPart("data") request: ProductRegisterRequest,
     ): ResponseEntity<ResponseDTO<Any>> {
-        productService.registerProduct(request, image)
+        productService.registerProduct(request, image, authentication.principal as Long)
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDTO.success())
     }
 
