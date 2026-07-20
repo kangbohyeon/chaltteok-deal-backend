@@ -45,7 +45,7 @@ class StockSoldOutNotificationJob(
                 processedIds += id
             } catch (e: Exception) {
                 log.warn(e) { "SOLD_OUT 알림 저장 실패 (retryCount=${event.retryCount + 1}) — id=$id" }
-                if (event.retryCount + 1 >= MAX_RETRIES) failedIds += id else retryIds += id
+                if (isMaxRetryReached(event)) failedIds += id else retryIds += id
             }
         }
 

@@ -39,6 +39,9 @@ abstract class AbstractOutboxBatchJob(
         val failedIds: List<Long>,
     )
 
+    protected fun isMaxRetryReached(event: OutboxEvent): Boolean =
+        event.retryCount + 1 >= MAX_RETRIES
+
     companion object {
         const val MAX_RETRIES = 3
         const val BATCH_SIZE = 100
