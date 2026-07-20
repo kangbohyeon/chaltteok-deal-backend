@@ -27,9 +27,10 @@ class OrderCancelNotificationConsumer(
         log.info { "주문취소 알림 이벤트 수신 — orderNumber=${event.orderNumber}" }
         notificationRepository.save(
             Notification(
-                type = NotificationType.ORDER.name,
+                type = NotificationType.ORDER,
                 title = "주문이 취소되었습니다",
                 message = "${event.orderNumber} (%,d원)".format(event.totalAmount),
+                orderNumber = event.orderNumber,
             )
         )
     }

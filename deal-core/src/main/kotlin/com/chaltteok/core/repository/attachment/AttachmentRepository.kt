@@ -11,11 +11,25 @@ interface AttachmentRepository : JpaRepository<Attachment, Long> {
 
     fun findAllByReferenceUuidInAndAttachmentType(referenceUuids: List<String>, attachmentType: String): List<Attachment>
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Attachment a SET a.referenceUuid = :referenceUuid, a.attachmentType = :attachmentType WHERE a.attachmentUuid IN :uuids AND a.referenceUuid IS NULL")
     fun updateReferenceByUuids(
         @Param("uuids") uuids: List<String>,
         @Param("referenceUuid") referenceUuid: String,
         @Param("attachmentType") attachmentType: String,
     ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Attachment a WHERE a.referenceUuid = :referenceUuid AND a.attachmentType = :attachmentType")
+    fun deleteByReferenceUuidAndAttachmentType(
+        @Param("referenceUuid") referenceUuid: String,
+        @Param("attachmentType") attachmentType: String,
+    )
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Attachment a WHERE a.referenceUuid IN :referenceUuids AND a.attachmentType = :attachmentType")
+    fun deleteByReferenceUuidsInAndAttachmentType(
+        @Param("referenceUuids") referenceUuids: List<String>,
+        @Param("attachmentType") attachmentType: String,
+    )
 }

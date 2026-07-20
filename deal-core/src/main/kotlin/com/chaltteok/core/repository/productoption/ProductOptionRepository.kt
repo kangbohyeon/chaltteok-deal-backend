@@ -12,10 +12,10 @@ import java.util.*
 
 interface ProductOptionRepository : JpaRepository<ProductOption, Long>, ProductOptionRepositoryCustom {
     fun findProductOptionByOptionUuid(uuid: String): Optional<ProductOption>
-    fun findFirstByProduct(product: Product): Optional<ProductOption>
+    fun findFirstByProductOrderByIdAsc(product: Product): Optional<ProductOption>
     fun findAllByProductIn(products: List<Product>): List<ProductOption>
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("DELETE FROM ProductOption po WHERE po.product.id = :productId")
     fun deleteAllByProductId(@Param("productId") productId: Long)

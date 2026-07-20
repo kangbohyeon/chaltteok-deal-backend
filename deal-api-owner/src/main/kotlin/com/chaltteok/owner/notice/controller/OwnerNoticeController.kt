@@ -16,6 +16,10 @@ class OwnerNoticeController(private val ownerNoticeService: OwnerNoticeService) 
     fun getAll(): ResponseDTO<List<NoticeResponse>> =
         ResponseDTO.success(ownerNoticeService.getAll())
 
+    @GetMapping("/{noticeUuid}")
+    fun getNotice(@PathVariable noticeUuid: String): ResponseDTO<NoticeResponse> =
+        ResponseDTO.success(ownerNoticeService.getNotice(noticeUuid))
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@Valid @RequestBody request: NoticeRequest): ResponseDTO<Unit> {

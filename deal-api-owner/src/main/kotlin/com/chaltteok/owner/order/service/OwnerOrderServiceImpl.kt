@@ -1,7 +1,10 @@
 package com.chaltteok.owner.order.service
 
 import com.chaltteok.core.domain.OrderItem
+import com.chaltteok.core.domain.OutboxEvent
 import com.chaltteok.core.domain.enums.OrderStatus
+import com.chaltteok.core.event.OrderCancelledEvent
+import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
@@ -13,12 +16,17 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @Service
 class OwnerOrderServiceImpl(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
+    private val outboxEventWriter: OutboxEventWriter,
 ) : OwnerOrderService {
 
     @Transactional(readOnly = true)
@@ -31,16 +39,20 @@ class OwnerOrderServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun getOrders(status: OrderStatus?, page: Int, size: Int): OwnerOrderListResponse {
+    override fun getOrders(status: OrderStatus?, startDate: LocalDate?, endDate: LocalDate?, page: Int, size: Int): OwnerOrderListResponse {
+        if (startDate != null && endDate != null) {
+            if (startDate.isAfter(endDate)) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must not be after endDate")
+            }
+            if (ChronoUnit.DAYS.between(startDate, endDate) > 365) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Date range must not exceed 365 days")
+            }
+        }
         val safePage = page.coerceAtLeast(0)
         val safeSize = size.coerceIn(1, 100)
         val pageable = PageRequest.of(safePage, safeSize)
 
-        val orderPage = if (status != null) {
-            orderRepository.findAllByStatusOrderByOrderedAtDesc(status, pageable)
-        } else {
-            orderRepository.findAllByOrderByOrderedAtDesc(pageable)
-        }
+        val orderPage = orderRepository.findAllByOwnerFilter(status, startDate, endDate, pageable)
 
         val orderIds = orderPage.content.mapNotNull { it.id }
         val itemsByOrderId = fetchItemsByOrderId(orderIds)
@@ -63,6 +75,35 @@ class OwnerOrderServiceImpl(
             totalPages = orderPage.totalPages,
             currentPage = orderPage.number,
             pageSize = orderPage.size,
+        )
+    }
+
+    @Transactional
+    override fun cancelOrder(orderNumber: String) {
+        val order = orderRepository.findByOrderNumber(orderNumber)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다: $orderNumber")
+        if (order.status == OrderStatus.CANCELLED) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 취소된 주문입니다: $orderNumber")
+        }
+        if (!order.isCancellable()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "취소할 수 없는 주문 상태입니다: ${order.status}")
+        }
+
+        val orderId = order.id ?: error("Order ID null")
+        order.cancel()
+        paymentRepository.findByOrderId(orderId)?.cancel()
+
+        outboxEventWriter.write(
+            source = OutboxEvent.SOURCE_API_OWNER,
+            aggregateId = order.orderNumber,
+            eventType = OutboxEvent.TYPE_ORDER_CANCELLED,
+            event = OrderCancelledEvent(
+                orderId = orderId,
+                orderNumber = order.orderNumber,
+                userName = order.user.nickname,
+                totalAmount = order.totalPrice.toLong(),
+                cancelledAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")),
+            )
         )
     }
 

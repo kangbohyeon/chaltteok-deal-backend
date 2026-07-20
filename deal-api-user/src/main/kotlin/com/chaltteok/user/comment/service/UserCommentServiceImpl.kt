@@ -99,6 +99,7 @@ class UserCommentServiceImpl(
         comment.content = request.content
         comment.rating = request.rating
         comment.isSecret = request.isSecret
+        attachmentRepository.deleteByReferenceUuidAndAttachmentType(commentUuid, AttachmentType.COMMENT.name)
         if (request.attachmentUuids.isNotEmpty()) {
             val updated = attachmentRepository.updateReferenceByUuids(
                 request.attachmentUuids,
@@ -118,6 +119,16 @@ class UserCommentServiceImpl(
         val comment = commentRepository.findByCommentUuid(commentUuid)
             ?: throw BusinessException(CommentErrorCode.COMMENT_NOT_FOUND)
         if (comment.userId != userId) throw BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED)
+        if (comment.parentId == null) {
+            val commentId = requireNotNull(comment.id) { "comment id null" }
+            val replies = commentRepository.findRepliesByParentIds(listOf(commentId))
+                .filter { it.isOwnerReply }
+            if (replies.isNotEmpty()) {
+                attachmentRepository.deleteByReferenceUuidsInAndAttachmentType(replies.map { it.commentUuid }, AttachmentType.COMMENT.name)
+                commentRepository.deleteAll(replies)
+            }
+        }
+        attachmentRepository.deleteByReferenceUuidAndAttachmentType(commentUuid, AttachmentType.COMMENT.name)
         commentRepository.delete(comment)
     }
 }

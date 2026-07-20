@@ -24,6 +24,10 @@ class PopupController(private val ownerPopupService: OwnerPopupService) {
     fun getAll(): ResponseDTO<List<PopupResponse>> =
         ResponseDTO.success(ownerPopupService.getAll())
 
+    @GetMapping("/{popupUuid}")
+    fun getPopup(@PathVariable popupUuid: String): ResponseDTO<PopupResponse> =
+        ResponseDTO.success(ownerPopupService.getPopup(popupUuid))
+
     @PostMapping
     fun create(@Valid @RequestBody request: PopupRequest): ResponseEntity<ResponseDTO<Any>> {
         ownerPopupService.create(request)

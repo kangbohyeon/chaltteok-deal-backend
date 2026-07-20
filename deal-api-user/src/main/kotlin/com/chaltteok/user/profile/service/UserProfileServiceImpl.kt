@@ -2,19 +2,35 @@ package com.chaltteok.user.profile.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.common.security.enums.AuthErrorCode
+import com.chaltteok.common.security.jwt.JwtTokenProvider
+import com.chaltteok.core.domain.UserConsentHistory
+import com.chaltteok.core.repository.consent.UserConsentHistoryRepository
+import com.chaltteok.core.repository.consent.UserConsentRepository
+import com.chaltteok.core.repository.consentcondition.ConsentConditionRepository
 import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.profile.dto.ChangePasswordRequest
+import com.chaltteok.user.profile.dto.ConsentUpdateRequest
 import com.chaltteok.user.profile.dto.UpdateNicknameRequest
+import com.chaltteok.user.profile.dto.UserConsentResponse
 import com.chaltteok.user.profile.dto.UserProfileResponse
+import com.chaltteok.user.profile.enums.ConsentErrorCode
+import com.chaltteok.user.profile.enums.ProfileErrorCode
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 @Service
 class UserProfileServiceImpl(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val userConsentRepository: UserConsentRepository,
+    private val userConsentHistoryRepository: UserConsentHistoryRepository,
+    private val consentConditionRepository: ConsentConditionRepository,
+    private val jwtTokenProvider: JwtTokenProvider,
 ) : UserProfileService {
 
     @Transactional(readOnly = true)
@@ -54,5 +70,54 @@ class UserProfileServiceImpl(
         user.password = passwordEncoder.encode(request.newPassword)
         user.passwordChangedAt = LocalDateTime.now()
         user.requirePasswordChange = false
+    }
+
+    @Transactional
+    override fun updateConsent(userId: Long, request: ConsentUpdateRequest) {
+        val condition = consentConditionRepository.findByConsentType(request.consentType)
+        if (!request.agreed && condition?.isRequired == true) {
+            throw BusinessException(ConsentErrorCode.REQUIRED_CONSENT_CANNOT_BE_WITHDRAWN)
+        }
+        val now = LocalDateTime.now()
+        val consent = userConsentRepository.findByUserIdAndConsentType(userId, request.consentType)
+            .orElseThrow { BusinessException(ConsentErrorCode.CONSENT_NOT_FOUND) }
+        consent.agreed = request.agreed
+        if (request.agreed) {
+            consent.agreedAt = now
+        }
+        userConsentHistoryRepository.save(
+            UserConsentHistory(
+                userId = userId,
+                consentType = request.consentType,
+                agreed = request.agreed,
+                changedAt = now,
+            )
+        )
+    }
+
+    @Transactional(readOnly = true)
+    override fun getConsents(userId: Long): List<UserConsentResponse> {
+        val consents = userConsentRepository.findAllByUserId(userId)
+        val conditionMap = consentConditionRepository.findAll()
+            .associateBy { it.consentType }
+        return consents.map { UserConsentResponse.from(it, conditionMap[it.consentType]) }
+    }
+
+    @Transactional
+    override fun withdraw(userId: Long, currentPassword: String?) {
+        val user = userRepository.findById(userId)
+            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
+        if (user.withdrawnAt != null) throw BusinessException(ProfileErrorCode.ALREADY_WITHDRAWN)
+        if (user.password != null) {
+            if (currentPassword.isNullOrBlank() || !passwordEncoder.matches(currentPassword, user.password)) {
+                throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
+            }
+        }
+        user.withdrawnAt = LocalDateTime.now(ZoneOffset.UTC)
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                jwtTokenProvider.deleteRefreshToken(userId, "ROLE_USER")
+            }
+        })
     }
 }

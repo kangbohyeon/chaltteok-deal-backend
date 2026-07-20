@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav th:fragment="globalNav" class="navbar navbar-dark bg-dark px-3">
+    <a class="navbar-brand" href="/admin">찰떡 어드민</a>
+    <div class="d-flex gap-3">
+        <a class="nav-link text-white" th:href="@{/admin/conditions}">조건 관리</a>
+        <a class="nav-link text-white" th:href="@{/admin/owners}">점주 관리</a>
+    </div>
+</nav>
+</body>
+</html>

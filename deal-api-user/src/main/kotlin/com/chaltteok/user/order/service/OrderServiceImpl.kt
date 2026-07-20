@@ -1,18 +1,29 @@
 package com.chaltteok.user.order.service
 
 import com.chaltteok.common.exception.BusinessException
+import com.chaltteok.common.security.enums.AuthErrorCode
+import com.chaltteok.core.domain.EventHistory
+import com.chaltteok.core.domain.Notification
+import com.chaltteok.core.domain.Order
+import com.chaltteok.core.domain.OrderItem
 import com.chaltteok.core.domain.OutboxEvent
-import com.chaltteok.core.domain.enums.DailyStockStatus
+import com.chaltteok.core.domain.Payment
 import com.chaltteok.core.domain.enums.OrderStatus
+import com.chaltteok.core.domain.enums.PaymentStatus
+import com.chaltteok.core.domain.enums.TimeSaleStockStatus
 import com.chaltteok.core.event.OrderCancelledEvent
+import com.chaltteok.core.event.OrderCompletedEvent
 import com.chaltteok.core.infrastructure.outbox.OutboxEventWriter
-import com.chaltteok.core.repository.dailystock.DailyStockRepository
+import com.chaltteok.core.repository.timesalestock.TimeSaleStockRepository
 import com.chaltteok.core.repository.eventhistory.EventHistoryRepository
+import com.chaltteok.core.repository.notification.NotificationRepository
 import com.chaltteok.core.repository.order.OrderRepository
 import com.chaltteok.core.repository.orderitem.OrderItemRepository
 import com.chaltteok.core.repository.payment.PaymentRepository
-import com.chaltteok.user.infrastructure.kafka.OrderEventProducer
+import com.chaltteok.core.repository.user.UserRepository
 import com.chaltteok.user.order.dto.OrderHistoryItemResponse
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import com.chaltteok.user.order.dto.OrderHistoryPageResponse
 import com.chaltteok.user.order.dto.OrderHistoryResponse
 import com.chaltteok.user.order.dto.OrderRequest
@@ -31,41 +42,87 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class OrderServiceImpl(
-    private val dailyStockRepository: DailyStockRepository,
+    private val timeSaleStockRepository: TimeSaleStockRepository,
     private val eventHistoryRepository: EventHistoryRepository,
+    private val userRepository: UserRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
-    private val orderEventProducer: OrderEventProducer,
+    private val notificationRepository: NotificationRepository,
     private val outboxEventWriter: OutboxEventWriter,
 ) : OrderService {
 
-    @Transactional(readOnly = true)
+    @Transactional
     override fun placeOrder(userId: Long, request: OrderRequest): OrderResponse {
-        val dailyStock = dailyStockRepository.findByStockUuid(request.stockUuid)
-            ?: throw BusinessException(OrderErrorCode.DAILY_STOCK_NOT_FOUND)
+        val user = userRepository.findById(userId)
+            .orElseThrow { BusinessException(AuthErrorCode.INVALID_CREDENTIALS) }
 
-        if (dailyStock.status != DailyStockStatus.OPEN) {
+        val timeSaleStock = timeSaleStockRepository.findByStockUuidWithLock(request.stockUuid)
+            ?: throw BusinessException(OrderErrorCode.TIME_SALE_STOCK_NOT_FOUND)
+
+        if (timeSaleStock.status != TimeSaleStockStatus.OPEN) {
             throw BusinessException(OrderErrorCode.STOCK_NOT_AVAILABLE)
         }
-        if (dailyStock.remainStock < request.quantity) {
+        if (timeSaleStock.remainStock < request.quantity) {
             throw BusinessException(OrderErrorCode.INSUFFICIENT_STOCK)
         }
 
-        val maxPurchaseCount = dailyStock.maxPurchaseCount
+        val maxPurchaseCount = timeSaleStock.maxPurchaseCount
         if (maxPurchaseCount != null) {
-            val participated = eventHistoryRepository.countByUser_IdAndDailyStock_Id(userId, dailyStock.id)
+            val participated = eventHistoryRepository.countByUser_IdAndTimeSaleStock_Id(userId, timeSaleStock.id)
             if (participated + request.quantity > maxPurchaseCount) {
-                if (participated == 0L) throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
-                throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
+                if (participated >= maxPurchaseCount) throw BusinessException(OrderErrorCode.ALREADY_PARTICIPATED)
+                throw BusinessException(OrderErrorCode.EXCEEDS_MAX_PURCHASE_COUNT)
             }
         }
 
-        val dailyStockId = dailyStock.id ?: error("DailyStock ID가 null입니다")
-        orderEventProducer.sendOrderEvent(userId, dailyStockId, request.quantity, request.paymentMethod)
-        logger.info { "타임세일 주문 이벤트 발행 — stockUuid=${request.stockUuid}, userId=$userId" }
+        timeSaleStock.decrease(request.quantity)
+        val stockExhaustedByThisOrder = timeSaleStock.remainStock == 0
+        val productNameForNotify = timeSaleStock.product.name
 
-        return OrderResponse.pending()
+        val totalPrice = timeSaleStock.salePrice.toLong() * request.quantity
+        val order = orderRepository.save(
+            Order(user = user, totalPrice = totalPrice.toInt(), status = OrderStatus.COMPLETED)
+        )
+        eventHistoryRepository.save(
+            EventHistory(user = user, timeSaleStock = timeSaleStock, order = order)
+        )
+        orderItemRepository.save(
+            OrderItem(order = order, product = timeSaleStock.product, quantity = request.quantity, price = timeSaleStock.salePrice)
+        )
+        paymentRepository.save(
+            Payment(order = order, amount = totalPrice.toInt(), status = PaymentStatus.SUCCESS, paymentMethod = request.paymentMethod.name, paidAt = LocalDateTime.now())
+        )
+
+        notificationRepository.save(Notification.forOrder(order.orderNumber, totalPrice))
+
+        outboxEventWriter.write(
+            source = OutboxEvent.SOURCE_API_USER,
+            aggregateId = order.orderNumber,
+            eventType = OutboxEvent.TYPE_ORDER_COMPLETED,
+            event = OrderCompletedEvent(
+                orderId = order.id ?: error("Order ID null"),
+                orderNumber = order.orderNumber,
+                userName = user.nickname,
+                productName = timeSaleStock.product.name,
+                totalAmount = totalPrice,
+                orderedAt = order.orderedAt,
+            )
+        )
+
+        if (stockExhaustedByThisOrder) {
+            TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+                override fun afterCommit() {
+                    runCatching {
+                        notificationRepository.save(Notification.forSoldOut(productNameForNotify))
+                    }.onFailure { e ->
+                        logger.error(e) { "품절 알림 저장 실패 — productName=$productNameForNotify" }
+                    }
+                }
+            })
+        }
+        logger.info { "타임세일 동기 주문 완료 — orderNumber=${order.orderNumber}, userId=$userId, stockUuid=${request.stockUuid}" }
+        return OrderResponse.completed(order.orderNumber, totalPrice)
     }
 
     @Transactional

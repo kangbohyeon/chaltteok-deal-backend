@@ -62,6 +62,10 @@ class JwtTokenProvider(
     fun getStoredRefreshToken(userId: Long, role: String): String? =
         redisTemplate.opsForValue().get(refreshKey(userId, role))
 
+    fun deleteRefreshToken(userId: Long, role: String) {
+        redisTemplate.delete(refreshKey(userId, role))
+    }
+
     private fun refreshKey(userId: Long, role: String) = "refresh:$role:$userId"
 
     private fun parseClaims(token: String): Claims =

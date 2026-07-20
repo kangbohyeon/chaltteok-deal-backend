@@ -20,6 +20,13 @@ class OwnerNoticeServiceImpl(
         noticeRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
             .map { NoticeResponse.from(it) }
 
+    @Transactional(readOnly = true)
+    override fun getNotice(noticeUuid: String): NoticeResponse {
+        val notice = noticeRepository.findByNoticeUuid(noticeUuid)
+            ?: throw BusinessException(NoticeErrorCode.NOTICE_NOT_FOUND)
+        return NoticeResponse.from(notice)
+    }
+
     @Transactional
     override fun create(request: NoticeRequest) {
         noticeRepository.save(

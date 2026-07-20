@@ -4,7 +4,7 @@ import com.chaltteok.consumer.order.exception.OrderProcessingException
 import com.chaltteok.consumer.order.service.helper.EventHistoryDuplicateChecker
 import com.chaltteok.consumer.order.service.helper.StockDecrementHelper
 import com.chaltteok.core.infrastructure.lock.DistributedLockService
-import com.chaltteok.core.repository.dailystock.DailyStockRepository
+import com.chaltteok.core.repository.timesalestock.TimeSaleStockRepository
 import com.chaltteok.core.repository.user.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.orm.ObjectOptimisticLockingFailureException
@@ -20,7 +20,7 @@ private const val LOCK_LEASE_SEC = 5L
 @Service
 class OrderProcessServiceImpl(
     private val userRepository: UserRepository,
-    private val dailyStockRepository: DailyStockRepository,
+    private val timeSaleStockRepository: TimeSaleStockRepository,
     private val duplicateChecker: EventHistoryDuplicateChecker,
     private val stockDecrementHelper: StockDecrementHelper,
     private val orderConfirmService: OrderConfirmService,
@@ -32,45 +32,48 @@ class OrderProcessServiceImpl(
 
         val user = userRepository.findById(command.userId)
             .orElseThrow { OrderProcessingException("User not found: ${command.userId}") }
-        val dailyStock = dailyStockRepository.findById(command.dailyStockId)
-            .orElseThrow { OrderProcessingException("DailyStock not found: ${command.dailyStockId}") }
+        val timeSaleStock = timeSaleStockRepository.findByIdWithProduct(command.timeSaleStockId)
+            ?: throw OrderProcessingException("TimeSaleStock not found: ${command.timeSaleStockId}")
 
-        if (duplicateChecker.isDuplicate(user, dailyStock)) {
-            log.warn { "중복 구매 요청 무시 — userId=${command.userId}, dailyStockId=${command.dailyStockId}" }
+        if (duplicateChecker.isExceedingPurchaseLimit(user, timeSaleStock, command.quantity)) {
+            log.warn { "구매 한도 초과 요청 무시 — userId=${command.userId}, timeSaleStockId=${command.timeSaleStockId}, quantity=${command.quantity}" }
             return
         }
 
-        val lockKey = "lock:daily-stock:${command.dailyStockId}"
+        val lockKey = "lock:time-sale-stock:${command.timeSaleStockId}"
         // waitSec=0: Kafka 컨슈머 스레드 블로킹 방지 — 락 획득 실패 시 즉시 스킵, Kafka 재처리에 위임
         distributedLockService.withLock(
             key = lockKey,
             waitSec = 0L,
             leaseSec = LOCK_LEASE_SEC,
             onFail = {
-                log.warn { "분산 락 획득 실패로 주문 처리 스킵 — userId=${command.userId}, dailyStockId=${command.dailyStockId}" }
+                log.warn { "분산 락 획득 실패로 주문 처리 스킵 — userId=${command.userId}, timeSaleStockId=${command.timeSaleStockId}" }
             },
         ) {
             var retries = 0
             var stockDecremented = false
             while (!stockDecremented && retries < MAX_RETRY) {
                 try {
-                    stockDecremented = stockDecrementHelper.tryDecrement(command.dailyStockId, command.quantity)
+                    stockDecremented = stockDecrementHelper.tryDecrement(command.timeSaleStockId, command.quantity)
                     if (!stockDecremented) {
-                        log.warn { "재고 소진 — dailyStockId=${command.dailyStockId}" }
+                        log.warn { "재고 소진 — timeSaleStockId=${command.timeSaleStockId}" }
                         return@withLock
                     }
                 } catch (e: ObjectOptimisticLockingFailureException) {
                     retries++
-                    log.warn { "낙관적 락 충돌, 재시도 $retries/$MAX_RETRY — dailyStockId=${command.dailyStockId}" }
+                    log.warn { "낙관적 락 충돌, 재시도 $retries/$MAX_RETRY — timeSaleStockId=${command.timeSaleStockId}" }
                     if (retries >= MAX_RETRY) {
-                        log.error { "낙관적 락 재시도 초과, 주문 처리 포기 — dailyStockId=${command.dailyStockId}" }
+                        log.error { "낙관적 락 재시도 초과, 주문 처리 포기 — timeSaleStockId=${command.timeSaleStockId}" }
                         return@withLock
                     }
                     Thread.sleep(RETRY_DELAY_MS)
+                } catch (e: IllegalStateException) {
+                    log.error(e) { "도메인 불변식 위반으로 주문 처리 포기 — timeSaleStockId=${command.timeSaleStockId}" }
+                    return@withLock
                 }
             }
             // 별도 빈을 통해 호출 → Spring 프록시 경유 → @Transactional 적용
-            orderConfirmService.confirmOrder(user, dailyStock, command.quantity, command.paymentMethod)
+            orderConfirmService.confirmOrder(user, timeSaleStock, command.quantity, command.paymentMethod)
         }
     }
 }

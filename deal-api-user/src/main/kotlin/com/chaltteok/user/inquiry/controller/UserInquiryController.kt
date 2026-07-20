@@ -19,6 +19,15 @@ class UserInquiryController(private val userInquiryService: UserInquiryService) 
         return ResponseDTO.success(userInquiryService.getMyInquiries(userId))
     }
 
+    @GetMapping("/{inquiryUuid}")
+    fun getMyInquiry(
+        authentication: Authentication,
+        @PathVariable inquiryUuid: String,
+    ): ResponseDTO<InquiryResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userInquiryService.getMyInquiry(userId, inquiryUuid))
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
@@ -27,5 +36,26 @@ class UserInquiryController(private val userInquiryService: UserInquiryService) 
     ): ResponseDTO<InquiryResponse> {
         val userId = authentication.principal as Long
         return ResponseDTO.success(userInquiryService.create(userId, request))
+    }
+
+    @PutMapping("/{inquiryUuid}")
+    fun update(
+        authentication: Authentication,
+        @PathVariable inquiryUuid: String,
+        @Valid @RequestBody request: InquiryRequest,
+    ): ResponseDTO<InquiryResponse> {
+        val userId = authentication.principal as Long
+        return ResponseDTO.success(userInquiryService.update(userId, inquiryUuid, request))
+    }
+
+    @DeleteMapping("/{inquiryUuid}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun delete(
+        authentication: Authentication,
+        @PathVariable inquiryUuid: String,
+    ): ResponseDTO<Unit> {
+        val userId = authentication.principal as Long
+        userInquiryService.delete(userId, inquiryUuid)
+        return ResponseDTO.success(Unit)
     }
 }

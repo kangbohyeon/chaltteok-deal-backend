@@ -23,6 +23,13 @@ class OwnerBannerServiceImpl(
         bannerRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder").and(Sort.by(Sort.Direction.DESC, "createdAt")))
             .map { BannerResponse.from(it) }
 
+    @Transactional(readOnly = true)
+    override fun getBanner(bannerUuid: String): BannerResponse {
+        val banner = bannerRepository.findByBannerUuid(bannerUuid)
+            ?: throw BusinessException(BannerErrorCode.BANNER_NOT_FOUND)
+        return BannerResponse.from(banner)
+    }
+
     @Transactional
     override fun create(request: BannerRequest, image: MultipartFile?) {
         val imageUrl = image?.takeIf { !it.isEmpty }?.let { localFileUploader.uploadFile(it, "banner") }

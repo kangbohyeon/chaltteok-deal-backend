@@ -51,4 +51,7 @@ class User(
 
     @Column(name = "require_password_change", nullable = false)
     var requirePasswordChange: Boolean = false
+
+    @Column(name = "withdrawn_at")
+    var withdrawnAt: LocalDateTime? = null
 }

@@ -1,10 +1,10 @@
 package com.chaltteok.common.security.config
 
 import com.chaltteok.common.security.jwt.JwtAuthenticationFilter
+import jakarta.servlet.DispatcherType
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod
 import org.springframework.security.config.Customizer.withDefaults
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -28,20 +28,8 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    // owner
-                    .requestMatchers("/api/v1/owner/auth/**").permitAll()
-                    .requestMatchers("/api/v1/owner/**").hasAuthority("ROLE_OWNER")
-                    // user — 로그인 없이 접근 가능한 공개 엔드포인트
-                    .requestMatchers("/api/v1/user/auth/**").permitAll()
-                    .requestMatchers("/api/v1/user/notices/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/user/daily-stocks/open").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/user/products/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/user/banners/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/user/popups/**").permitAll()
-                    // 정적 이미지 파일 공개 접근
-                    .requestMatchers(HttpMethod.GET, "/images/**").permitAll()
-                    .anyRequest().authenticated()
+                    .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                    .anyRequest().permitAll()
             }
             .exceptionHandling { ex ->
                 ex.authenticationEntryPoint { _, response, _ ->

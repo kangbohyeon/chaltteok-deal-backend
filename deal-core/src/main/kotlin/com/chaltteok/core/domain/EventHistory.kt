@@ -20,7 +20,7 @@ class EventHistory(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id", nullable = false)
-    val dailyStock: DailyStock,
+    val timeSaleStock: TimeSaleStock,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")

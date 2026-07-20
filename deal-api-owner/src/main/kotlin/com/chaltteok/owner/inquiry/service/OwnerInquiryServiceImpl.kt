@@ -2,6 +2,7 @@ package com.chaltteok.owner.inquiry.service
 
 import com.chaltteok.common.exception.BusinessException
 import com.chaltteok.core.domain.enums.AttachmentType
+import com.chaltteok.core.domain.enums.InquiryStatus
 import com.chaltteok.core.repository.attachment.AttachmentRepository
 import com.chaltteok.core.repository.inquiry.InquiryRepository
 import com.chaltteok.core.repository.user.UserRepository
@@ -47,12 +48,23 @@ class OwnerInquiryServiceImpl(
         )
     }
 
+    @Transactional(readOnly = true)
+    override fun getInquiry(inquiryUuid: String): OwnerInquiryResponse {
+        val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
+            ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
+        val userUuid = userRepository.findById(inquiry.userId).map { it.userUuid }.orElse("")
+        val attachments = attachmentRepository.findAllByReferenceUuidInAndAttachmentType(
+            listOf(inquiryUuid), AttachmentType.INQUIRY.name
+        )
+        return OwnerInquiryResponse.from(inquiry, userUuid, attachments)
+    }
+
     @Transactional
     override fun answer(inquiryUuid: String, request: AnswerRequest) {
         val inquiry = inquiryRepository.findByInquiryUuid(inquiryUuid)
             ?: throw BusinessException(InquiryErrorCode.INQUIRY_NOT_FOUND)
         inquiry.answer = request.answer
-        inquiry.status = "ANSWERED"
+        inquiry.status = InquiryStatus.ANSWERED
         inquiry.answeredAt = LocalDateTime.now()
     }
 }

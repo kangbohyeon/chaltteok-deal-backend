@@ -3,8 +3,11 @@ package com.chaltteok.owner.notification.controller
 import com.chaltteok.common.dto.ResponseDTO
 import com.chaltteok.owner.notification.dto.NotificationListResponse
 import com.chaltteok.owner.notification.service.NotificationService
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -20,5 +23,23 @@ class NotificationController(private val notificationService: NotificationServic
     fun markAllRead(): ResponseDTO<Unit> {
         notificationService.markAllRead()
         return ResponseDTO.success(Unit)
+    }
+
+    @PatchMapping("/{uuid}/read")
+    fun markRead(@PathVariable uuid: String): ResponseDTO<Unit> {
+        notificationService.markRead(uuid)
+        return ResponseDTO.success(Unit)
+    }
+
+    @DeleteMapping("/{uuid}")
+    fun delete(@PathVariable uuid: String): ResponseEntity<Void> {
+        notificationService.delete(uuid)
+        return ResponseEntity.noContent().build()
+    }
+
+    @DeleteMapping
+    fun deleteAll(): ResponseEntity<Void> {
+        notificationService.deleteAll()
+        return ResponseEntity.noContent().build()
     }
 }

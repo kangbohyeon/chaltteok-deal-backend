@@ -30,6 +30,8 @@ class OwnerAuthServiceImpl(
             throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
         }
 
+        if (owner.withdrawnAt != null) throw BusinessException(AuthErrorCode.WITHDRAWN_ACCOUNT)
+
         val ownerId = owner.id ?: throw BusinessException(AuthErrorCode.INVALID_CREDENTIALS)
 
         val requirePasswordChange = owner.passwordChangedAt == null ||
